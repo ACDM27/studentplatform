@@ -1,0 +1,590 @@
+<template>
+  <div class="dashboard-container">
+    <!-- 顶部信息区域 -->
+    <div class="dashboard-header">
+      <div class="user-info-section">
+        <div class="user-avatar">
+          <n-avatar size="large" round>
+            <n-icon size="30">
+              <User />
+            </n-icon>
+          </n-avatar>
+        </div>
+        <div class="user-details">
+          <div class="user-name-id">
+            <h2>{{ userInfo.name }}</h2>
+            <n-tag size="small" type="info">{{ userInfo.student_id }}</n-tag>
+          </div>
+          <div class="user-academic-info">
+            <span>{{ userInfo.college }}</span>
+            <span>{{ userInfo.major }}</span>
+            <span>{{ userInfo.grade }}级</span>
+          </div>
+        </div>
+        <div class="semester-info">
+          <n-tag type="primary" size="large">{{ currentSemester }}</n-tag>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="dashboard-content">
+      <div class="content-left">
+        <!-- 最新公告 -->
+        <n-card title="最新公告" class="announcement-card">
+          <template #header-extra>
+            <n-button v-if="announcements.length > defaultAnnouncementCount" 
+                     text 
+                     @click="toggleAnnouncementDisplay">
+              {{ showAllAnnouncements ? '收起' : '显示更多' }}
+            </n-button>
+          </template>
+          <n-list>
+            <n-list-item v-for="notice in displayedAnnouncements" :key="notice.id">
+              <n-thing :title="notice.title">
+                <template #description>
+                  <div class="notice-meta">
+                    <n-tag size="small" :type="notice.type">{{ notice.category }}</n-tag>
+                    <span class="notice-date">{{ notice.date }}</span>
+                  </div>
+                </template>
+              </n-thing>
+            </n-list-item>
+          </n-list>
+        </n-card>
+
+        <!-- 最近任务 -->
+        <n-card title="最近任务" class="tasks-card">
+          <template #header-extra>
+            <n-button text @click="navigateToHomework">查看完整任务</n-button>
+          </template>
+          <n-tabs type="line" animated>
+            <n-tab-pane name="homework" tab="待提交作业">
+              <n-list>
+                <n-list-item v-for="task in homeworkTasks" :key="task.id">
+                  <n-thing :title="task.title">
+                    <template #description>
+                      <div class="task-meta">
+                        <div class="task-info">
+                          <span class="teacher">指导老师: {{ task.teacher }}</span>
+                          <span class="credit">学分: {{ task.credit }}</span>
+                          <n-tag :type="task.status === '已提交' ? 'success' : task.status === '进行中' ? 'warning' : 'default'">{{ task.status }}</n-tag>
+                        </div>
+                        <span class="due-date">截止日期: {{ task.deadline }}</span>
+                      </div>
+                    </template>
+                  </n-thing>
+                </n-list-item>
+              </n-list>
+            </n-tab-pane>
+            <n-tab-pane name="project" tab="项目进度">
+              <n-list>
+                <n-list-item v-for="project in projectTasks" :key="project.id">
+                  <n-thing :title="project.title">
+                    <template #description>
+                      <div class="project-meta">
+                        <n-progress type="line" :percentage="project.progress" />
+                        <span class="milestone">{{ project.milestone }}</span>
+                      </div>
+                    </template>
+                  </n-thing>
+                </n-list-item>
+              </n-list>
+            </n-tab-pane>
+          </n-tabs>
+        </n-card>
+      </div>
+
+      <div class="content-right">
+        <!-- 快速操作 -->
+        <n-card title="快速操作" class="quick-actions-card">
+          <div class="quick-actions-grid">
+            <div v-for="action in quickActions" :key="action.id" class="quick-action-item" @click="handleQuickAction(action.id)">
+              <n-icon size="24" :component="action.icon" />
+              <span>{{ action.name }}</span>
+            </div>
+          </div>
+        </n-card>
+
+        <!-- 本周日历 -->
+        <n-card title="本周日历" class="calendar-card">
+          <template #header-extra>
+            <n-button text @click="navigateToSchedule">查看完整日历</n-button>
+          </template>
+          <div class="week-calendar">
+            <div v-for="day in weekSchedule" :key="day.date" class="calendar-day" :class="{ 'has-class': day.hasClass }">
+              <div class="day-header">
+                <span class="day-name">{{ day.name }}</span>
+                <span class="day-date">{{ day.date }}</span>
+              </div>
+              <div class="day-content" v-if="day.hasClass">
+                <n-tag size="small" type="success">{{ day.className }}</n-tag>
+                <span class="class-time">{{ day.classTime }}</span>
+              </div>
+            </div>
+          </div>
+        </n-card>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { 
+  User, 
+  Book, 
+  FileText, 
+  ChartBar, 
+  CreditCard, 
+  ClipboardCheck
+} from '@vicons/tabler'
+import { getAssignments, getNews } from '../../../apis/index'
+import type { IGetAssignmentsResp, IGetNewsResp } from '../../../types/api'
+import { useCourseService } from '../../../services/courseService'
+
+const router = useRouter()
+
+// 使用课程服务
+const { weekSchedule, loadCourses } = useCourseService()
+
+// 用户信息
+const userInfo = ref({
+  name: '张三',
+  student_id: '2021100123',
+  college: '计算机科学与技术学院',
+  major: '计算机科学与技术',
+  grade: '2021'
+})
+
+// 当前学期
+const currentSemester = ref('2023-2024学年第二学期')
+
+// 公告数据
+interface Announcement {
+  id: number
+  title: string
+  category: string
+  type: string
+  date: string
+}
+
+const announcements = ref<Announcement[]>([])
+// 控制是否展开显示全部公告
+const showAllAnnouncements = ref(false)
+// 默认显示的公告数量
+const defaultAnnouncementCount = 3
+
+// 切换展开/收起公告列表
+const toggleAnnouncementDisplay = () => {
+  showAllAnnouncements.value = !showAllAnnouncements.value
+}
+
+// 计算当前应该显示的公告列表
+const displayedAnnouncements = computed(() => {
+  if (showAllAnnouncements.value || announcements.value.length <= defaultAnnouncementCount) {
+    return announcements.value
+  } else {
+    return announcements.value.slice(0, defaultAnnouncementCount)
+  }
+})
+
+// 从API获取新闻数据
+const fetchNews = async () => {
+  try {
+    // getNews 返回的是 IGetNewsResp 类型，直接包含 data 数组
+    const newsResp = await getNews()
+    
+    // 检查响应数据是否有效
+    if (newsResp && Array.isArray(newsResp.data)) {
+      const newsData = newsResp.data
+      
+      if (newsData.length > 0) {
+        announcements.value = newsData.map(news => {
+          // 添加空值检查
+          if (!news) return null
+          
+          // 根据新闻类别设置不同的类型样式
+          let type = 'info'
+          if (news.category && news.category.includes('考试')) {
+            type = 'warning'
+          } else if (news.category && news.category.includes('竞赛')) {
+            type = 'success'
+          }
+          
+          return {
+            id: news.id || 0,
+            title: news.title || '无标题',
+            category: news.category ? (news.category.split('_')[1] || news.category) : '其他通知', // 提取中文部分
+            type: type,
+            date: news.publisheddate ? news.publisheddate.substring(0, 10) : '未知日期' // 只取日期部分
+          }
+        }).filter(item => item !== null) // 过滤掉无效的项
+      } else {
+        console.warn('获取的新闻列表为空')
+        setDefaultAnnouncements()
+      }
+    } else {
+      // 处理响应数据无效的情况
+      console.error('获取新闻失败: 数据格式不正确')
+      setDefaultAnnouncements()
+    }
+  } catch (error) {
+    console.error('获取新闻数据失败:', error)
+    setDefaultAnnouncements()
+  }
+}
+
+// 设置默认公告数据的辅助函数
+const setDefaultAnnouncements = () => {
+  announcements.value = [
+    { id: 1, title: '关于2024年春季学期期末考试安排的通知', category: '考试通知', type: 'warning', date: '2024-01-10' },
+    { id: 2, title: '寒假实习岗位信息发布', category: '就业通知', type: 'info', date: '2024-01-08' },
+    { id: 3, title: '计算机学院创新创业大赛启动', category: '竞赛通知', type: 'success', date: '2024-01-05' }
+  ]
+}
+
+// 作业任务
+interface HomeworkTask {
+  id: number
+  title: string
+  teacher: string
+  credit: number
+  status: string
+  deadline: string
+}
+
+const homeworkTasks = ref<HomeworkTask[]>([])
+
+// 从API获取作业任务数据
+const fetchAssignments = async () => {
+  try {
+    const response = await getAssignments()
+    // 将API返回的数据转换为组件需要的格式
+    if (response && response.data) {
+      homeworkTasks.value = response.data.map(assignment => ({
+        id: assignment.id,
+        title: assignment.title,
+        teacher: '待获取', // API中可能没有提供教师信息，需要补充
+        credit: 2, // API中可能没有提供学分信息，需要补充
+        status: '进行中', // 状态信息需要根据实际情况设置
+        deadline: assignment.deadline || '未设置'
+      }))
+    }
+  } catch (error) {
+    console.error('获取作业任务失败:', error)
+    // 可以添加错误处理逻辑，如显示错误提示等
+  }
+}
+
+// 在组件挂载时获取作业任务数据和新闻数据
+onMounted(() => {
+  fetchAssignments()
+  fetchNews()
+  loadCourses() // 加载课程数据
+})
+
+// 项目任务
+const projectTasks = ref([
+  { id: 1, title: '毕业设计项目', progress: 45, milestone: '需求分析阶段' },
+  { id: 2, title: '创新创业项目', progress: 80, milestone: '开发测试阶段' }
+])
+
+// 快速操作
+const quickActions = ref([
+  { id: 'homework', name: '作业提交', icon: ClipboardCheck },
+  { id: 'schedule', name: '课表查询', icon: Book },
+  { id: 'exam', name: '考试安排', icon: FileText },
+  { id: 'grade', name: '成绩查询', icon: ChartBar },
+  { id: 'library', name: '图书借阅', icon: Book },
+  { id: 'card', name: '一卡通', icon: CreditCard }
+])
+
+// 处理快速操作点击
+const handleQuickAction = (actionId: string) => {
+  switch (actionId) {
+    case 'homework':
+      router.push('/student/homework')
+      break
+    case 'schedule':
+      router.push('/student/course-schedule')
+      break
+    // ... 其他操作处理
+  }
+}
+
+// 跳转到课程安排页面
+const navigateToSchedule = () => {
+  router.push('/student/course-schedule')
+}
+
+// 跳转到作业管理页面
+const navigateToHomework = () => {
+  router.push('/student/homework')
+}
+</script>
+
+<style scoped>
+.dashboard-container {
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.user-info-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.user-details {
+  flex-grow: 1;
+  margin-left: 20px;
+}
+
+.user-name-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.user-name-id h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #1a1a1a;
+}
+
+.user-academic-info {
+  display: flex;
+  gap: 16px;
+  color: #666;
+}
+
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  height: calc(100vh - 120px);
+  padding: 0 16px;
+}
+
+.content-left,
+.content-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.content-left {
+  overflow-y: auto;
+}
+
+.content-right {
+  overflow-y: auto;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.quick-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quick-action-item:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+}
+
+.week-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  padding: 6px 4px;
+  border-radius: 4px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.calendar-day.has-class {
+  background: #e8f4fd;
+  border-color: #91d5ff;
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.day-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 11px;
+}
+
+.day-date {
+  font-size: 10px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.day-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.day-content .n-tag {
+  font-size: 10px;
+  padding: 1px 4px;
+  line-height: 1.2;
+}
+
+.class-time {
+  font-size: 9px;
+  color: #666;
+  text-align: center;
+}
+
+.notice-meta,
+.project-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.teacher, .credit {
+  color: #666;
+  font-size: 14px;
+}
+
+.due-date {
+  color: #1890ff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.task-meta :deep(.n-progress),
+.project-meta :deep(.n-progress) {
+  width: 60%;
+}
+
+.due-date,
+.milestone {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: #666;
+  font-size: 13px;
+}
+
+/* 卡片样式优化 */
+.announcement-card,
+.tasks-card,
+.quick-actions-card,
+.calendar-card {
+  height: fit-content;
+}
+
+.tasks-card {
+  flex: 1;
+}
+
+.calendar-card {
+  margin-top: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .content-left,
+  .content-right {
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .user-info-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .user-details {
+    margin: 16px 0;
+  }
+
+  .user-academic-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .week-calendar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .calendar-day {
+    min-height: 50px;
+  }
+}
+</style>
