@@ -313,6 +313,7 @@ function updateActiveMenu() {
     '/student/achievement-collect': 'achievement',
     '/student/teacher-info': 'teacher_info',
     '/student/teachers': 'teacher_info',
+    '/student/teacher-favorites': 'teacher_info',
     '/student/courses': 'course_schedule',
     '/student/course-schedule': 'course_schedule',
     '/student/consult': 'consult',
@@ -321,6 +322,12 @@ function updateActiveMenu() {
     '/student/resume': 'resume',
     '/student/job-recommendation': 'job-recommendation',
     '/student/talent-market': 'talent_market'
+  }
+  
+  // 特殊处理教师详情页面
+  if (path.startsWith('/student/teacher-detail/')) {
+    activeMenu.value = 'teacher_info'
+    return
   }
   
   // 特殊处理活动页面，根据查询参数确定具体的活动类型

@@ -366,6 +366,133 @@
       <!-- 无数据提示 -->
       <n-empty v-else description="未找到教师信息" />
     </n-spin>
+
+    <!-- 联系教师模态框 -->
+      <div class="contact_form_container">
+        <!-- 居中遮罩 -->
+        <n-modal
+          v-model:show="show_contact_modal"
+          preset="dialog"
+          :show-icon="false"
+          :closable="false"
+          :mask-closable="true"
+          :style="{ width: '920px', top: '10vh' }"
+          content-style="padding: 0"
+        >
+
+            <div class="contact_form_container">
+              <!-- 标题（可选） -->
+              <div class="form_header">
+                <h3>加入导师团队申请表</h3>
+              </div>
+
+              <!-- 表单内容：一行两列 -->
+              <n-form
+                ref="contact_form_ref"
+                :model="contact_form"
+                :rules="contact_rules"
+                label-placement="left"
+                label-width="auto"
+                require-mark-placement="right-hanging"
+                style="padding: 24px 32px"
+              >
+                <n-grid :cols="2" :x-gap="32">
+                  <!-- 左侧 -->
+                  <n-gi>
+                    <div class="form_section">
+                      <h4 class="section_title">
+                        <User :size="20" />
+                        基本信息
+                      </h4>
+
+                      <n-form-item label="姓名" path="student_name">
+                        <n-input v-model:value="contact_form.student_name" placeholder="请输入您的真实姓名" clearable />
+                      </n-form-item>
+
+                      <n-form-item label="学号" path="student_id">
+                        <n-input v-model:value="contact_form.student_id" placeholder="请输入您的学号" clearable />
+                      </n-form-item>
+
+                      <n-form-item label="邮箱" path="student_email">
+                        <n-input v-model:value="contact_form.student_email" placeholder="请输入您的邮箱地址" clearable />
+                      </n-form-item>
+
+                      <n-form-item label="手机号" path="student_phone">
+                        <n-input v-model:value="contact_form.student_phone" placeholder="请输入您的手机号" clearable />
+                      </n-form-item>
+
+                      <n-form-item label="专业" path="student_major">
+                        <n-input v-model:value="contact_form.student_major" placeholder="请输入您的专业" clearable />
+                      </n-form-item>
+
+                      <n-form-item label="年级" path="student_grade">
+                        <n-select
+                          v-model:value="contact_form.student_grade"
+                          placeholder="请选择您的年级"
+                          :options="[
+                            { label: '大一', value: '大一' },
+                            { label: '大二', value: '大二' },
+                            { label: '大三', value: '大三' },
+                            { label: '大四', value: '大四' },
+                          ]"
+                        />
+                      </n-form-item>
+                    </div>
+                  </n-gi>
+
+                  <!-- 右侧 -->
+                  <n-gi>
+                    <div class="form_section">
+                      <h4 class="section_title">
+                        <Award :size="20" />
+                        申请信息
+                      </h4>
+
+                      <n-form-item label="申请理由" path="apply_reason">
+                        <n-input
+                          v-model:value="contact_form.apply_reason"
+                          type="textarea"
+                          placeholder="请详细说明您希望加入该教师团队的理由（至少20字）"
+                          :rows="5"
+                          show-count
+                          maxlength="500"
+                        />
+                      </n-form-item>
+
+                      <n-form-item label="研究兴趣">
+                        <n-input
+                          v-model:value="contact_form.research_interest"
+                          type="textarea"
+                          placeholder="请简述您的研究兴趣和方向（选填）"
+                          :rows="4"
+                          show-count
+                          maxlength="300"
+                        />
+                      </n-form-item>
+
+                      <n-form-item label="自我介绍">
+                        <n-input
+                          v-model:value="contact_form.self_intro"
+                          type="textarea"
+                          placeholder="请简单介绍一下自己，包括学习经历、技能特长等（选填）"
+                          :rows="4"
+                          show-count
+                          maxlength="300"
+                        />
+                      </n-form-item>
+                    </div>
+                  </n-gi>
+                </n-grid>
+              </n-form>
+
+              <!-- 底部按钮（可选） -->
+              <div class="form_footer">
+                <n-button @click="show_contact_modal = false">取消</n-button>
+                <n-button type="primary" style="margin-left: 12px" @click="submit_contact">提交申请</n-button>
+              </div>
+            </div>
+        </n-modal>
+      </div>
   </div>
 </template>
 
@@ -395,15 +522,35 @@ import http from '../../../server/api/http'
 // 后端URL
 const backendUrl = 'http://localhost:1337'
 
-// 处理教师头像URL的函数
+// 获取头像URL
 const getAvatarUrl = (teacher: any): string => {
-  if (!teacher || !teacher.avatar) return '/placeholder-avatar.jpg';
+  // 如果教师对象不存在或没有avatar属性，返回默认头像
+  if (!teacher || !teacher.avatar) {
+    return backendUrl + '/uploads/avatar_88e8d14b8c.jpg';
+  }
   
-  // 如果avatar已经是完整URL，直接返回
-  if (teacher.avatar.startsWith('http')) return teacher.avatar;
+  const avatarObj = teacher.avatar as any;
+
+  // 处理字符串类型的头像URL
+  if (typeof avatarObj === 'string') {
+    // 如果是完整URL则直接返回，否则拼接后端URL
+    return avatarObj.startsWith('http') ? avatarObj : backendUrl + avatarObj;
+  }
+
+  // 处理新的Strapi媒体对象格式
+  if (avatarObj.id && avatarObj.hash) {
+    // 直接使用hash作为文件名
+    return `${backendUrl}/uploads/${avatarObj.hash}${avatarObj.ext}`;
+  }
   
-  // 如果avatar是相对路径，拼接后端URL
-  return teacher.avatar.startsWith('/') ? backendUrl + teacher.avatar : '/placeholder-avatar.jpg';
+  // 处理标准Strapi媒体对象类型的头像
+  const data = avatarObj?.data;
+  if (data && data.attributes && data.attributes.url) {
+    return backendUrl + data.attributes.url;
+  }
+  
+  // 如果无法获取有效的头像URL，返回默认头像
+  return backendUrl + '/uploads/avatar_88e8d14b8c.jpg';
 };
 
 // 路由和消息
@@ -620,7 +767,7 @@ const get_cached_teacher = (id: string): any => {
     // 尝试从sessionStorage获取缓存的教师数据
     const cachedData = sessionStorage.getItem(`teacher_${id}`)
     if (cachedData) {
-      console.log('✅ 从缓存获取教师详情:', id)
+      console.log('从缓存获取教师详情:', id)
       return JSON.parse(cachedData)
     }
     
@@ -825,7 +972,7 @@ const fetchTeacherDetail = async (): Promise<void> => {
           )
           
           if (targetTeacher) {
-            console.log('✅ 从列表API找到教师数据:', targetTeacher)
+            console.log('从列表API找到教师数据:', targetTeacher)
             process_teacher_data(targetTeacher)
             return
           }
@@ -839,12 +986,8 @@ const fetchTeacherDetail = async (): Promise<void> => {
       }
     }
     
-    // 如果所有API调用都没有返回有效数据
-    console.warn('⚠️ 所有API调用都未返回有效数据，使用默认数据')
-    use_default_data()
-    
   } catch (error: any) {
-    console.error('❌ 获取教师详情失败:', error)
+    console.error('获取教师详情失败:', error)
     
     // 详细的错误处理
     if (error.response) {
@@ -929,9 +1072,97 @@ const toggleFavorite = (): void => {
   localStorage.setItem('favorite_teachers', JSON.stringify(favorite_ids))
 }
 
+// 联系教师表单相关状态
+const show_contact_modal = ref<boolean>(false)
+const contact_form = ref({
+  student_name: '',
+  student_id: '',
+  student_email: '',
+  student_phone: '',
+  student_major: '',
+  student_grade: '',
+  apply_reason: '',
+  research_interest: '',
+  self_intro: ''
+})
+
+// 表单验证规则
+const contact_rules = {
+  student_name: {
+    required: true,
+    message: '请输入您的姓名',
+    trigger: ['input', 'blur']
+  },
+  student_id: {
+    required: true,
+    message: '请输入您的学号',
+    trigger: ['input', 'blur']
+  },
+  student_email: {
+    required: true,
+    message: '请输入您的邮箱',
+    trigger: ['input', 'blur'],
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  },
+  student_phone: {
+    required: true,
+    message: '请输入您的手机号',
+    trigger: ['input', 'blur'],
+    pattern: /^1[3-9]\d{9}$/
+  },
+  student_major: {
+    required: true,
+    message: '请输入您的专业',
+    trigger: ['input', 'blur']
+  },
+  student_grade: {
+    required: true,
+    message: '请选择您的年级',
+    trigger: ['change', 'blur']
+  },
+  apply_reason: {
+    required: true,
+    message: '请填写申请理由',
+    trigger: ['input', 'blur'],
+    min: 20
+  }
+}
+
 // 联系教师
 const contactTeacher = (): void => {
-  message.info('联系功能即将上线，敬请期待')
+  show_contact_modal.value = true
+}
+
+// 提交联系申请
+const submit_contact = async (): Promise<void> => {
+  try {
+    // 这里可以添加实际的API调用
+    console.log('提交联系申请:', contact_form.value)
+    
+    message.success('申请已提交，教师将会尽快回复您！')
+    show_contact_modal.value = false
+    
+    // 重置表单
+    contact_form.value = {
+      student_name: '',
+      student_id: '',
+      student_email: '',
+      student_phone: '',
+      student_major: '',
+      student_grade: '',
+      apply_reason: '',
+      research_interest: '',
+      self_intro: ''
+    }
+  } catch (error) {
+    console.error('提交申请失败:', error)
+    message.error('提交申请失败，请稍后重试')
+  }
+}
+
+// 取消联系申请
+const cancel_contact = (): void => {
+  show_contact_modal.value = false
 }
 
 // 检查是否已收藏
@@ -1262,4 +1493,153 @@ onMounted(() => {
   text-align: center;
   padding: 24px 0;
 }
+
+/* 联系教师表单样式 - 横向窗口设计 */
+.contact_modal {
+  max-width: 1400px;
+  width: 95vw;
+  min-width: 800px;
+}
+
+.modal_header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2080f0;
+}
+
+.contact_form_container {
+  padding: 20px 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.form_section {
+  margin-bottom: 20px;
+}
+
+.section_title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modal_actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.cancel_btn {
+  min-width: 80px;
+}
+
+.submit_btn {
+  min-width: 100px;
+  background-color: #2080f0;
+}
+
+.submit_btn:hover {
+  background-color: #1c7ed6;
+}
+
+/* 表单项样式优化 */
+.contact_form_container .n-form-item {
+  margin-bottom: 16px;
+}
+
+.contact_form_container .n-form-item-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.contact_form_container .n-input,
+.contact_form_container .n-select {
+  border-radius: 6px;
+}
+
+.contact_form_container .n-input:focus-within,
+.contact_form_container .n-select:focus-within {
+  border-color: #2080f0;
+  box-shadow: 0 0 0 2px rgba(32, 128, 240, 0.1);
+}
+
+/* 横向布局分栏样式 */
+.contact_form_container .n-grid > .n-grid-item:first-child {
+  border-right: 1px solid #f0f0f0;
+  padding-right: 20px;
+}
+
+.contact_form_container .n-grid > .n-grid-item:last-child {
+  padding-left: 20px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .contact_modal {
+    max-width: 95vw;
+  }
+  
+  .contact_form_container .n-grid > .n-grid-item:first-child {
+    border-right: none;
+    padding-right: 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .contact_form_container .n-grid > .n-grid-item:last-child {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .contact_modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
+}
+
+.contact_form_container {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.form_header {
+  padding: 20px 32px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.form_section {
+  padding: 8px 0;
+}
+
+.section_title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form_footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 32px 24px;
+}
+
 </style>

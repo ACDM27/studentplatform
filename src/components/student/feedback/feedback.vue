@@ -273,6 +273,8 @@ import type {
   IFeedbackItem 
 } from '../../../types/api'
 import { getFeedbacks, postFeedback } from '../../../apis/index'
+import axios from 'axios'
+import http, { getBaseURL } from '../../../server/api/http'
 
 // 消息提示
 const message = useMessage()
@@ -287,7 +289,18 @@ const active_tab = ref('submit')
 const submitting = ref(false)
 
 // 表单数据
-const form_data = reactive({
+const form_data = reactive<{
+  feed_type: string
+  is_anonym: boolean
+  name: string
+  student_id: string
+  email: string
+  phone: string
+  content: string
+  contact: string
+  priority: string
+  attachments: Array<{ file: File; name: string }>
+}>({
   feed_type: '',
   is_anonym: false,
   name: '',
@@ -508,7 +521,9 @@ const resetForm = () => {
   })
 }
 
-// 提交表单
+
+
+// 使用axios提交表单（适用于Strapi v4格式）
 const submitForm = async (): Promise<void> => {
   if (!form_ref.value) return
   
@@ -527,9 +542,6 @@ const submitForm = async (): Promise<void> => {
       }
       return categoryMap[feedType] || 'Other_其他'
     }
-    
-    // 获取当前日期
-    const currentDate = new Date().toISOString().split('T')[0]
     
     // 检查附件是否上传
     if (!form_data.attachments || form_data.attachments.length === 0) {
@@ -554,21 +566,32 @@ const submitForm = async (): Promise<void> => {
       }
     }
     
-    // 构建提交数据
-    const submitData: IPostFeedbackReq = {
+    // 创建FormData对象（Strapi v4格式）
+    const formData = new FormData()
+    
+    // ✅ 添加JSON数据到FormData
+    formData.append('data', JSON.stringify({
       name: form_data.is_anonym ? '' : form_data.name,
       student_id: form_data.is_anonym ? '' : form_data.student_id,
-      email: form_data.is_anonym ? (form_data.contact && form_data.contact.includes('@') ? form_data.contact : '') : form_data.email,
-      phone: form_data.is_anonym ? (form_data.contact && !form_data.contact.includes('@') ? form_data.contact : '') : form_data.phone,
-      date: currentDate,
+      email: form_data.is_anonym ? (form_data.contact?.includes('@') ? form_data.contact : '') : form_data.email,
+      phone: form_data.is_anonym ? (form_data.contact?.includes('@') ? '' : form_data.contact) : form_data.phone,
+      date: new Date().toISOString().split('T')[0],
       content: form_data.content,
-      category: mapFeedTypeToCategory(form_data.feed_type) as 'Suggestion_建议' | 'Appeal_申诉' | 'Issue_问题' | 'Other_其他',
-      attachments: form_data.attachments
-    }
+      category: mapFeedTypeToCategory(form_data.feed_type)
+    }))
+    
+    // 添加文件（注意字段名必须和Strapi中定义的媒体字段一致）
+    form_data.attachments?.forEach(fileInfo => {
+      if (fileInfo.file instanceof File) {
+        formData.append('files.attachments', fileInfo.file) // 
+      }
+    })
     
     // 调用API提交
     try {
-      const response = await postFeedback(submitData)
+      // 不要设置Content-Type，让axios自动处理
+      const response = await axios.post(`${http.defaults.baseURL}/feedbacks`, formData)
+      
       submitting.value = false
       if (response && response.data) {
         message.success('反馈提交成功')
