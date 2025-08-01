@@ -505,12 +505,17 @@ onMounted(() => {
   padding: 16px 24px;
   background-color: #f8f9fa;
   min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 页面标题 */
 .page_header {
   text-align: left;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page_header h1 {
@@ -533,6 +538,9 @@ onMounted(() => {
   border-radius: 8px;
   padding: 16px 20px;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .emergency_content {
@@ -592,6 +600,9 @@ onMounted(() => {
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .stat_card {
@@ -625,6 +636,9 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .search_input_wrapper {
@@ -669,6 +683,9 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .category_tab {
@@ -696,8 +713,18 @@ onMounted(() => {
   color: white;
 }
 
+/* 咨询师容器 */
+.consultants_container {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 /* 咨询师网格 */
 .consultants_grid {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
@@ -903,38 +930,66 @@ onMounted(() => {
 @media (max-width: 1200px) {
   .consultants_grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .stats_section {
     grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 }
 
 @media (max-width: 768px) {
   .consultation_page {
     padding: 12px 16px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
   
   .stats_section {
     grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .search_section {
     flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .category_tabs {
     flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
   
   .emergency_content {
     flex-direction: column;
     gap: 12px;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .emergency_left {
     justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .consultants_container {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 }
 </style>

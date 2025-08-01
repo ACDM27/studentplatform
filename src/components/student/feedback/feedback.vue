@@ -219,7 +219,7 @@
     </div>
     
     <!-- 详情弹窗 -->
-    <n-modal v-model:show="modal" preset="card" title="反馈详情" style="width: 600px">
+    <n-modal v-model:show="modal" preset="card" title="反馈详情" style="width: 600px; max-width: 100%;">
       <n-descriptions bordered>
         <n-descriptions-item label="反馈类型">
           {{ curr_item?.feed_type }}
@@ -627,12 +627,17 @@ onMounted(() => {
   padding: 16px 24px;
   background-color: #f8f9fa;
   min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 页面标题 */
 .page_header {
   text-align: left;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page_header h1 {
@@ -650,12 +655,18 @@ onMounted(() => {
 
 .feedback-header {
   margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .form-actions {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .word-count {
@@ -671,5 +682,8 @@ onMounted(() => {
 
 .process-tips {
   margin-top: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 </style>

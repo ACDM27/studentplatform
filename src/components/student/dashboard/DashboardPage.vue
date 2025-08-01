@@ -68,7 +68,7 @@
                         <div class="task-info">
                           <span class="teacher">指导老师: {{ task.teacher }}</span>
                           <span class="credit">学分: {{ task.credit }}</span>
-                          <n-tag :type="task.status === '已提交' ? 'success' : task.status === '进行中' ? 'warning' : 'default'">{{ task.status }}</n-tag>
+                          <n-tag :type="get_status_type(task.status)">{{ task.status }}</n-tag>
                         </div>
                         <span class="due-date">截止日期: {{ task.deadline }}</span>
                       </div>
@@ -253,9 +253,30 @@ interface HomeworkTask {
   credit: number
   status: string
   deadline: string
+  publish_date: string
 }
 
 const homeworkTasks = ref<HomeworkTask[]>([])
+
+// 根据时间判断作业状态
+const calc_assign_status = (publish_date: string, deadline: string): string => {
+  const now = new Date()
+  const publish = new Date(publish_date)
+  const due = new Date(deadline)
+  
+  // 如果当前时间小于发布时间，显示"未开始"
+  if (now < publish) {
+    return '未开始'
+  }
+  
+  // 如果当前时间超过截止时间，显示"已截止"
+  if (now > due) {
+    return '已截止'
+  }
+  
+  // 如果在发布时间和截止时间之间，显示"待提交"
+  return '待提交'
+}
 
 // 从API获取作业任务数据
 const fetchAssignments = async () => {
@@ -263,18 +284,35 @@ const fetchAssignments = async () => {
     const response = await getAssignments()
     // 将API返回的数据转换为组件需要的格式
     if (response && response.data) {
-      homeworkTasks.value = response.data.map(assignment => ({
-        id: assignment.id,
-        title: assignment.title,
-        teacher: '待获取', // API中可能没有提供教师信息，需要补充
-        credit: 2, // API中可能没有提供学分信息，需要补充
-        status: '进行中', // 状态信息需要根据实际情况设置
-        deadline: assignment.deadline || '未设置'
-      }))
+      homeworkTasks.value = response.data.map(assignment => {
+        const publish_date = assignment.createdAt || '2024-01-01'
+        const deadline = assignment.deadline || '2024-12-31'
+        
+        return {
+          id: assignment.id,
+          title: assignment.title,
+          teacher: assignment.teachers_name || '未指定老师',
+          credit: 2, // 默认学分，可根据实际需求调整
+          status: calc_assign_status(publish_date, deadline),
+          deadline: deadline,
+          publish_date: publish_date
+        }
+      })
     }
   } catch (error) {
     console.error('获取作业任务失败:', error)
-    // 可以添加错误处理逻辑，如显示错误提示等
+    // 设置默认数据以防止页面空白
+    homeworkTasks.value = [
+      {
+        id: 1,
+        title: '数据结构课程作业',
+        teacher: '张教授',
+        credit: 2,
+        status: '待提交',
+        deadline: '2024-01-20',
+        publish_date: '2024-01-01'
+      }
+    ]
   }
 }
 
@@ -322,6 +360,17 @@ const navigateToSchedule = () => {
 // 跳转到作业管理页面
 const navigateToHomework = () => {
   router.push('/student/homework')
+}
+
+// 获取状态对应的标签类型
+const get_status_type = (status: string) => {
+  const statusMap: Record<string, string> = {
+    '已完成': 'success',
+    '待提交': 'warning',
+    '未开始': 'default',
+    '已截止': 'error'
+  }
+  return statusMap[status] || 'default'
 }
 </script>
 

@@ -1,4 +1,4 @@
-重新<template>
+<template>
   <div class="vote-survey-container">
     <!-- 页面标题 -->
     <div class="page_header">
@@ -273,12 +273,17 @@ const participate = (id: number) => {
   padding: 16px 24px;
   background-color: #f8f9fa;
   min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 页面标题 */
 .page_header {
   text-align: left;
   margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page_header h1 {
@@ -296,6 +301,9 @@ const participate = (id: number) => {
 
 .stats-section {
   margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .stat-card {
@@ -335,17 +343,26 @@ const participate = (id: number) => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .survey-list {
   background-color: #fff;
   border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .survey-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .survey-title {
@@ -355,6 +372,9 @@ const participate = (id: number) => {
 
 .survey-meta {
   margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .meta-item {
@@ -365,5 +385,8 @@ const participate = (id: number) => {
 .survey-actions {
   display: flex;
   justify-content: flex-end;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 </style>
