@@ -226,7 +226,7 @@ const submitting = ref(false)
 const form_data = ref({
   student_id: '',
   name: '',
-  category: 'competition', // 成果类别，对应后端category字段，默认为竞赛类
+  category: '1', // 成果类别，对应后端category字段，默认为竞赛类
   award: '', // 奖项，对应后端award字段
   date: null as number | null, // 获奖日期，对应后端date字段
   level: '',
@@ -288,12 +288,12 @@ const form_rules = {
 
 // 选项配置 - 与后端字段保持一致
 const category_opts = [
-  { label: '竞赛类', value: 'competition' },
-  { label: '科研类', value: 'research' },
-  { label: '项目类', value: 'project' },
-  { label: '论文类', value: 'paper' },
-  { label: '专利类', value: 'patent' },
-  { label: '证书类', value: 'certification' }
+  { label: '竞赛类', value: '1' },
+  { label: '科研类', value: '2' },
+  { label: '项目类', value: '3' },
+  { label: '论文类', value: '4' },
+  { label: '专利类', value: '5' },
+  { label: '证书类', value: '6' }
 ]
 
 // 修正奖项配置，确保标签与值匹配
@@ -306,8 +306,7 @@ const award_opts = [
 ]
 
 const level_opts = [
-  { label: '国际级', value: 'international' },
-  { label: '国家级', value: 'national' },
+  { label: '国家级', value: 'international' },
   { label: '省部级', value: 'provincial' },
   { label: '校级', value: 'university' },
   { label: '院级', value: 'college' }
@@ -383,7 +382,7 @@ const reset_form = () => {
   Object.assign(form_data.value, {
     student_id: '',
     name: '',
-    category: 'competition', // 默认为竞赛类
+    category: '1', // 默认为竞赛类
     award: '',
     date: null,
     level: '',
@@ -429,7 +428,6 @@ const submitAchievementForm = async () => {
         date: form_data.value.date ? new Date(form_data.value.date).toISOString() : new Date().toISOString(),
         title: form_data.value.title.trim(),
         tutor_name: form_data.value.tutor_name.trim(),
-        submission_status: 'draft', // 默认设为草稿状态
       }
     }
     

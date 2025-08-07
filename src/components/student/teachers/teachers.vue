@@ -334,11 +334,29 @@ const fetchTeacherData = async (): Promise<void> => {
       // 更灵活地处理不同的数据结构
       let teacherData = []
       
+      console.log('API响应数据类型:', typeof response.data)
+      console.log('API响应数据结构:', JSON.stringify(response.data, null, 2))
+      
       if (Array.isArray(response.data)) {
+        console.log('数据是数组类型')
         teacherData = response.data
       } else if (response.data.data && Array.isArray(response.data.data)) {
+        console.log('数据是包含data数组的对象')
         teacherData = response.data.data
+      } else if (response.data.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+        console.log('数据是包含data对象的对象，可能是Strapi格式')
+        // 处理Strapi的标准响应格式
+        const strapiData = response.data.data
+        if (Array.isArray(strapiData)) {
+          teacherData = strapiData.map((item: any) => {
+            // 合并attributes到顶层
+            return { id: item.id, ...item.attributes }
+          })
+        } else {
+          teacherData = [{ id: strapiData.id, ...strapiData.attributes }]
+        }
       } else if (typeof response.data === 'object') {
+        console.log('数据是普通对象类型')
         // 尝试将对象转换为数组
         const keys = Object.keys(response.data)
         if (keys.length > 0 && typeof response.data[keys[0]] === 'object') {
@@ -349,15 +367,26 @@ const fetchTeacherData = async (): Promise<void> => {
       // 确保数据格式一致，正确映射后端字段
       teachers.value = teacherData.map((item: any) => {
         console.log('处理单个教师数据:', item)
+        console.log('研究方向字段:', {
+          research_direction: item.research_direction,
+          researchcontent: item.researchcontent,
+          researchContent: item.researchContent,
+          research_directions: item.research_directions
+        })
+        console.log('当前授课字段:', {
+          current_courses: item.current_courses,
+          classname: item.classname,
+          className: item.className
+        })
         return {
           id: item.id?.toString() || '',
           name: item.name || '',
           title: item.title || '',
           college: item.department || item.college || '',
-          research_direction: item.researchcontent || item.researchContent || item.research_direction || '',
+          research_direction: item.research_direction || item.researchcontent || item.researchContent || item.research_directions || '',
           student_type: item.studentCount ? item.studentCount.toString() : item.student_type || '',
           rating: Number(item.rating) || 0,
-          current_courses: item.classname || item.className || item.current_courses || '',
+          current_courses: item.current_courses || item.classname || item.className || '',
           office_location: item.officeLocation || item.office_location || '',
           office_hours: item.officeHours || item.office_hours || '',
           avatar: item.attributes?.avatar || item.avatar || ''

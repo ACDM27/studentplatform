@@ -24,29 +24,29 @@
           </div>
         </div>
 
-        <!-- 统计卡片 -->
+        <!-- 统计卡片 - 实时统计 -->
         <div class="stats-cards">
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">4</div>
+              <div class="stat-number">{{ stats.total_count }}</div>
               <div class="stat-label">任务总数</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">2</div>
+              <div class="stat-number">{{ stats.ongoing_count }}</div>
               <div class="stat-label">进行中</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
-              <div class="stat-label">已完成</div>
+              <div class="stat-number">{{ stats.completed_count }}</div>
+              <div class="stat-label">已结束</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
+              <div class="stat-number">{{ stats.not_started_count }}</div>
               <div class="stat-label">未开始</div>
             </div>
           </n-card>
@@ -141,29 +141,29 @@
           </div>
         </div>
 
-        <!-- 统计卡片 -->
+        <!-- 统计卡片 - 实时统计 -->
         <div class="stats-cards">
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">4</div>
+              <div class="stat-number">{{ stats.total_count }}</div>
               <div class="stat-label">任务总数</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">2</div>
+              <div class="stat-number">{{ stats.ongoing_count }}</div>
               <div class="stat-label">进行中</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
-              <div class="stat-label">已完成</div>
+              <div class="stat-number">{{ stats.completed_count }}</div>
+              <div class="stat-label">已结束</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
+              <div class="stat-number">{{ stats.not_started_count }}</div>
               <div class="stat-label">未开始</div>
             </div>
           </n-card>
@@ -254,29 +254,29 @@
           </div>
         </div>
 
-        <!-- 统计卡片 -->
+        <!-- 统计卡片 - 实时统计 -->
         <div class="stats-cards">
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">4</div>
+              <div class="stat-number">{{ stats.total_count }}</div>
               <div class="stat-label">任务总数</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">2</div>
+              <div class="stat-number">{{ stats.ongoing_count }}</div>
               <div class="stat-label">进行中</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
-              <div class="stat-label">已完成</div>
+              <div class="stat-number">{{ stats.completed_count }}</div>
+              <div class="stat-label">已结束</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
+              <div class="stat-number">{{ stats.not_started_count }}</div>
               <div class="stat-label">未开始</div>
             </div>
           </n-card>
@@ -371,29 +371,29 @@
           </div>
         </div>
 
-        <!-- 统计卡片 -->
+        <!-- 统计卡片 - 实时统计 -->
         <div class="stats-cards">
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">4</div>
+              <div class="stat-number">{{ stats.total_count }}</div>
               <div class="stat-label">任务总数</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">2</div>
+              <div class="stat-number">{{ stats.ongoing_count }}</div>
               <div class="stat-label">进行中</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
-              <div class="stat-label">已完成</div>
+              <div class="stat-number">{{ stats.completed_count }}</div>
+              <div class="stat-label">已结束</div>
             </div>
           </n-card>
           <n-card class="stat-card">
             <div class="stat-content">
-              <div class="stat-number">1</div>
+              <div class="stat-number">{{ stats.not_started_count }}</div>
               <div class="stat-label">未开始</div>
             </div>
           </n-card>
@@ -681,6 +681,17 @@ const status_opts: SelectOption[] = [
   { label: '已结束', value: '已结束' }
 ]
 
+// 统计数据对象 - 实时计算活动统计信息
+const stats = computed(() => {
+  const all_activities = activities.value
+  return {
+    total_count: all_activities.length,
+    ongoing_count: all_activities.filter(a => a.status === '进行中').length,
+    completed_count: all_activities.filter(a => a.status === '已结束').length,
+    not_started_count: all_activities.filter(a => a.status === '未开始').length
+  }
+})
+
 // 计算属性：过滤后的活动列表
 const filtered_acts = computed(() => {
   let filtered = activities.value
@@ -697,7 +708,7 @@ const filtered_acts = computed(() => {
   if (filter_type.value) {
     filtered = filtered.filter(activity => activity.category === filter_type.value)
   }
-
+  
   // 状态筛选
   if (filter_stat.value) {
     filtered = filtered.filter(activity => activity.status === filter_stat.value)
