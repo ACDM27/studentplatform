@@ -1,11 +1,15 @@
 <!-- src/App.vue -->
 <template>
-  <n-message-provider>
-    <router-view />
-  </n-message-provider>
+  <n-config-provider>
+    <n-dialog-provider>
+      <n-message-provider>
+        <router-view />
+      </n-message-provider>
+    </n-dialog-provider>
+  </n-config-provider>
 </template>
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { NMessageProvider } from 'naive-ui'
+import { NMessageProvider, NDialogProvider, NConfigProvider } from 'naive-ui'
 </script>

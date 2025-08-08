@@ -185,8 +185,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 import { useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
+import { useMessage, useDialog } from 'naive-ui'
 import type { Component } from 'vue'
 import { 
   IconSchool as School, 
@@ -247,6 +248,7 @@ interface SelectOption {
 
 const router = useRouter()
 const message = useMessage()
+const Dialog = useDialog()
 
 // 加载状态
 const loading = ref<boolean>(false)
@@ -507,7 +509,25 @@ async function fetchAchievementData() {
         console.error('错误详情:', String(error))
       }
       
-      // 使用模拟数据
+      // 尝试从缓存加载数据
+      const cachedData = sessionStorage.getItem('achievements_cache')
+      if (cachedData) {
+        try {
+          const parsedData = JSON.parse(cachedData)
+          if (Array.isArray(parsedData) && parsedData.length > 0) {
+            console.log('从缓存加载成果数据，数量:', parsedData.length)
+            achievements.value = parsedData
+            calculateStats(parsedData)
+            message.info('已加载缓存数据')
+            return
+          }
+        } catch (e) {
+          console.error('解析缓存数据失败:', e)
+        }
+      }
+      
+      // 如果没有缓存或缓存无效，使用模拟数据
+      console.log('无可用缓存，使用模拟数据')
       achievements.value = mockAchievements
       calculateStats(mockAchievements)
       
@@ -580,9 +600,6 @@ const filtered_achievements = computed((): AchievementItem[] => {
     return true
   })
   
-  // 移除这里的统计更新，统计数据应该基于全部数据
-  // calculateStats(result)
-  
   return result
 })
 
@@ -603,10 +620,10 @@ onMounted(async () => {
       achievements.value = mockAchievements
       calculateStats(mockAchievements)
       
-      // 🎯 缓存模拟数据
+      //缓存模拟数据
       cache_achievements_data()
       
-      console.log('📊 模拟数据已加载:', achievements.value)
+      console.log('模拟数据已加载:', achievements.value)
       
       // 测试映射函数
       achievements.value.forEach(achievement => {
@@ -620,9 +637,9 @@ onMounted(async () => {
     }
     
     // 统计API已删除，使用响应式统计系统，无需额外API调用
-    console.log('📊 使用响应式统计系统，无需额外API调用')
+    console.log('使用响应式统计系统，无需额外API调用')
   } catch (error: unknown) {
-    console.error('❌ 页面初始化过程中发生错误:', error)
+    console.error('页面初始化过程中发生错误:', error)
     // 确保即使测试失败也能显示模拟数据
     achievements.value = mockAchievements
     calculateStats(mockAchievements)
@@ -725,8 +742,29 @@ const testConnection = async () => {
       message.error('API连接测试失败，请检查后端服务')
     }
   } catch (error: unknown) {
-    console.error('测试连接时发生错误:', error)
-    message.error('测试连接时发生错误')
+    // 规范化错误处理
+    if (error && typeof error === 'object' && 'response' in error) {
+      // Axios错误 - 使用类型断言确保类型安全
+      const axiosError = error as { response?: { status?: number; data?: any }; message?: string }
+      if (axiosError.response && axiosError.response.status) {
+        console.error('测试连接时发生错误:', axiosError.response.status, axiosError.response.data)
+        message.error(`测试连接失败，错误码：${axiosError.response.status}`)
+      } else if (axiosError.message) {
+        console.error('测试连接时发生错误:', axiosError.message)
+        message.error(`测试连接失败：${axiosError.message}`)
+      } else {
+        console.error('测试连接时发生错误:', error)
+        message.error('测试连接时发生错误，服务器响应异常')
+      }
+    } else if (error instanceof Error) {
+      // 标准JS错误
+      console.error('测试连接时发生错误:', error.message)
+      message.error(`测试连接失败：${error.message}`)
+    } else {
+      // 其他类型错误
+      console.error('测试连接时发生错误:', String(error))
+      message.error('测试连接时发生错误，请重试')
+    }
   }
 }
 
@@ -976,7 +1014,12 @@ const cache_achievements_data = (): void => {
       console.log('✅ 成果数据已缓存到sessionStorage')
     }
   } catch (error) {
-    console.warn('⚠️ 缓存成果数据失败:', error)
+    // 规范化错误处理
+    if (error instanceof Error) {
+      console.warn('⚠️ 缓存成果数据失败:', error.message)
+    } else {
+      console.warn('⚠️ 缓存成果数据失败:', String(error))
+    }
   }
 }
 
@@ -1090,25 +1133,142 @@ const mockAchievements: AchievementItem[] = [
   }
 ]
 
-// 删除成果
-const delete_achievement = async (id: string): Promise<void> => {
+// 刷新成果数据 - 增强版本，确保数据正确刷新
+const refreshAchievements = async (): Promise<void> => {
+  console.log('刷新成果数据...')
   try {
-    const response = await deleteAchievement(id)
-    console.log('删除成果响应:', response)
-    message.success('删除成功')
-    // 重新获取数据
+    // 清除缓存，确保获取最新数据
+    sessionStorage.removeItem('achievements_cache')
+    
+    // 获取最新数据
     await fetchAchievementData()
     
     // 调试数据更新情况
     setTimeout(() => {
-      console.log('删除后数据更新情况:')
+      console.log('数据更新情况:')
       debug_data_mapping()
     }, 500)
-  } catch (error: unknown) {
-    console.error('删除成果失败:', error)
-    message.error('删除失败，请稍后重试')
+    
+    // 确保数据被缓存
+    cache_achievements_data()
+    
+    console.log('成果数据刷新成功，当前数据条数:', achievements.value.length)
+  } catch (error) {
+    console.error('刷新成果数据失败:', error)
+    
+    // 规范化错误处理
+    if (error && typeof error === 'object' && 'response' in error) {
+      // Axios错误 - 使用类型断言确保类型安全
+      const axiosError = error as { response?: { status?: number; data?: any }; message?: string }
+      if (axiosError.response && axiosError.response.status) {
+        message.error(`刷新数据失败，错误码：${axiosError.response.status}`)
+        console.error('错误详情:', axiosError.response.data || '无详细信息')
+      } else {
+        message.error('刷新数据失败，服务器响应异常')
+      }
+    } else if (error instanceof Error) {
+      // 标准JS错误
+      message.error(`刷新数据失败：${error.message}`)
+    } else {
+      // 其他类型错误
+      message.error('刷新数据失败，请重试')
+    }
+    
+    // 尝试使用缓存数据
+    const cachedData = sessionStorage.getItem('achievements_cache')
+    if (cachedData) {
+      try {
+        achievements.value = JSON.parse(cachedData)
+        console.log('已加载缓存数据')
+        message.info('已加载缓存数据')
+      } catch (e) {
+        console.error('解析缓存数据失败:', e instanceof Error ? e.message : String(e))
+      }
+    }
   }
 }
+
+// 使用环境变量来设置axios的基础URL
+import { getBaseURL } from '@/server/api/http'
+
+const axiosInstance = axios.create({
+  baseURL: getBaseURL().replace('/api', ''), // 使用环境变量设置API基础URL，移除'/api'后缀
+  timeout: 5000, // 可选：设置请求超时
+});
+
+// 删除成果
+const delete_achievement = async (id: string): Promise<void> => {
+  if (Dialog) {  
+    Dialog.warning({
+      title: '确认删除',
+      content: '您确定要删除此成果吗？',
+      positiveText: '确定',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        try {
+          // 显示加载状态
+          loading.value = true;
+          message.loading('正在删除...');
+
+          // 先通过GET请求确认数据存在
+          try {
+            // 使用fetchAchievementById获取单个成果数据
+            const checkResponse = await fetchAchievementById(id);
+            console.log('成果数据确认:', checkResponse);
+            
+            // 确认数据存在后，再执行删除操作
+            if (checkResponse && checkResponse.data) {
+              // 使用API函数删除数据，而不是直接使用axios
+              const response = await deleteAchievement(id);
+              console.log('删除成果响应:', response);
+
+              // 检查响应状态
+              if (response && (response.status === 200 || response.status === 204)) {
+                message.success('删除成功');
+                
+                // 删除成功后，执行更新成果展示区域的逻辑
+                await refreshAchievements();
+              } else {
+                console.error('删除响应异常:', response);
+                message.error('删除失败，服务器响应异常');
+              }
+            } else {
+              console.error('成果数据不存在或无法访问');
+              message.error('删除失败，成果数据不存在或无法访问');
+            }
+          } catch (checkError) {
+            console.error('获取成果数据失败:', checkError);
+            message.error('删除失败，无法确认成果数据是否存在');
+          }
+        } catch (error) {
+          console.error('删除失败:', error);
+          // 规范化错误处理
+          if (error && typeof error === 'object' && 'response' in error) {
+            // 后端返回的错误 - 使用类型断言确保类型安全
+            const axiosError = error as { response?: { status?: number; data?: any }; message?: string };
+            if (axiosError.response && axiosError.response.status) {
+              message.error(`删除失败，错误码：${axiosError.response.status}`);
+              // 记录详细错误信息
+              console.error('错误详情:', axiosError.response.data || '无详细信息');
+            } else {
+              message.error('删除失败，服务器响应异常');
+            }
+          } else if (error instanceof Error) {
+            // 标准JS错误
+            message.error(`删除失败：${error.message}`);
+          } else {
+            // 网络问题等其他错误
+            message.error('删除失败，请检查网络连接');
+          }
+        } finally {
+          // 无论成功失败，都关闭加载状态
+          loading.value = false;
+        }
+      },
+    });
+  }
+};
+
 </script>
 
 <style scoped>

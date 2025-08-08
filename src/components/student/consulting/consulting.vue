@@ -389,8 +389,9 @@ const fetchConsultantData = async () => {
   }
 }
 
-// 后端URL
-const backendUrl = 'http://localhost:1337';
+// 后端URL - 使用环境变量
+import { getBaseURL } from '@/server/api/http';
+const backendUrl = getBaseURL().replace('/api', '');
 
 // 辅助函数：获取头像URL
 const getAvatarUrl = (avatar: any): string => {

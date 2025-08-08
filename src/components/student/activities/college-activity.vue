@@ -588,10 +588,11 @@ import { useRoute } from 'vue-router'
 import { Add, Book, Filter, Search, Close } from '@vicons/ionicons5'
 import { useMessage, type FormRules } from 'naive-ui'
 import axios from 'axios'
+import { getBaseURL } from '@/server/api/http'
 
 // 创建axios实例
 const apiClient = axios.create({
-  baseURL: 'http://localhost:1337/api', // 设置API基础URL
+  baseURL: getBaseURL(), // 使用环境变量设置API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json'

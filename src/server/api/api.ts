@@ -66,8 +66,20 @@ export const fetchAchievements = () => http.get('/achievements')
 export const fetchAchievementById = (id: ID) => http.get(`/achievements/${id}`)
 export const createAchievement = (data: SubmitData) => http.post('/achievements', data)
 export const updateAchievement = (id: ID, data: SubmitData) => http.put(`/achievements/${id}`, data)
-export const deleteAchievement = (id: ID) => http.delete(`/achievements/${id}`)
-export const viewAchievementDetail = (id: ID) => http.get(`/achievements/${id}/view`)
+// 删除成果 - 确保正确处理URL和参数
+export const deleteAchievement = (id: ID) => {
+  console.log(`准备删除成果，ID: ${id}`);
+  // 确保ID是有效的
+  if (!id) {
+    console.error('删除成果失败: 无效的ID');
+    return Promise.reject(new Error('无效的ID'));
+  }
+  // 确保URL格式正确
+  const url = `/achievements/${id}`;
+  console.log(`删除成果URL: ${url}`);
+  return http.delete(url);
+}
+export const viewAchievementDetail = (id: ID) => http.get(`/achievements/${id}/`)
 
 
 // 活动相关 API

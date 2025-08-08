@@ -286,14 +286,14 @@ const form_rules = {
   ]
 }
 
-// 选项配置 - 与后端字段保持一致
+// 选项配置 - 保留数字值，映射为后端字段值
 const category_opts = [
-  { label: '竞赛类', value: '1' },
-  { label: '科研类', value: '2' },
-  { label: '项目类', value: '3' },
-  { label: '论文类', value: '4' },
-  { label: '专利类', value: '5' },
-  { label: '证书类', value: '6' }
+  { label: '竞赛类', value: '1', backendValue: 'competition' },
+  { label: '科研类', value: '2', backendValue: 'research' },
+  { label: '项目类', value: '3', backendValue: 'project' },
+  { label: '论文类', value: '4', backendValue: 'paper' },
+  { label: '专利类', value: '5', backendValue: 'patent' },
+  { label: '证书类', value: '6', backendValue: 'certification' }
 ]
 
 // 修正奖项配置，确保标签与值匹配
@@ -417,12 +417,19 @@ const submitAchievementForm = async () => {
     await form_ref.value?.validate()
     submitting.value = true
     
+    // 获取当前选择的 category 数字值
+    const selectedCategory = form_data.value.category;
+    
+    // 找到对应的后端字段值
+    const selectedCategoryOption = category_opts.find(option => option.value === selectedCategory);
+    const categoryBackendValue = selectedCategoryOption ? selectedCategoryOption.backendValue : '';
+
     // 构建符合后端API要求的提交数据格式
     const submit_data = {
       data: {
         student_id: form_data.value.student_id.trim(),
         name: form_data.value.name.trim(),
-        category: form_data.value.category,
+        category: categoryBackendValue,  // 使用映射后的值
         award: form_data.value.award,
         level: form_data.value.level,
         date: form_data.value.date ? new Date(form_data.value.date).toISOString() : new Date().toISOString(),

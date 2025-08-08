@@ -203,7 +203,8 @@ const get_title_cn = (title: string): string => {
   return title_map[title] || title
 }
 
-const backendUrl = 'http://localhost:1337';
+import { getBaseURL } from '@/server/api/http';
+const backendUrl = getBaseURL().replace('/api', '');
 
 const getAvatarUrl = (teacher: TeacherItem): string => {
   // 如果教师对象不存在或没有avatar属性，返回默认头像

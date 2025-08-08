@@ -517,10 +517,10 @@ import {
   IconThumbUp as ThumbUp
 } from '@tabler/icons-vue'
 import { fetchTeacherById } from '../../../server/api/api'
-import http from '../../../server/api/http'
+import http, { getBaseURL } from '../../../server/api/http'
 
-// 后端URL
-const backendUrl = 'http://localhost:1337'
+// 后端URL - 使用环境变量
+const backendUrl = getBaseURL().replace('/api', '')
 
 // 获取头像URL
 const getAvatarUrl = (teacher: any): string => {
