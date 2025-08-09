@@ -332,9 +332,6 @@ const goToHome = () => {
   router.push('/')
 }
 
-const goToRegister = () => {
-  router.push('/student/register')
-}
 </script>
 
 <style scoped>

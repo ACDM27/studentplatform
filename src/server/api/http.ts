@@ -62,7 +62,9 @@ instance.interceptors.response.use(
       console.log('DELETE请求响应处理:', response.status)
       // 对于DELETE请求，204状态码是常见的成功响应
       if (response.status === 204) {
-        console.log('DELETE请求成功(204 No Content)')
+        console.log('DELETE请求成功(204 No Content) - 这是正常的响应')
+        // 为204响应添加空数据对象，确保一致性
+        response.data = response.data || {};
       }
     }
     

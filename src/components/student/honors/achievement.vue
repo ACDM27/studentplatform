@@ -269,13 +269,16 @@ const stats = ref({
 
 // 计算成果统计数据 - 基于全部数据进行统计
 const calculateStats = (achievementList: AchievementItem[]): void => {
-  stats.value.total_count = achievementList.length
-  stats.value.competition_count = achievementList.filter(a => a.type_id === '1').length
-  stats.value.research_count = achievementList.filter(a => a.type_id === '2').length
-  stats.value.project_count = achievementList.filter(a => a.type_id === '3').length
-  stats.value.paper_count = achievementList.filter(a => a.type_id === '4').length
-  stats.value.patent_count = achievementList.filter(a => a.type_id === '5').length
-  stats.value.certificate_count = achievementList.filter(a => a.type_id === '6').length
+  // 过滤掉已软删除的成果
+  const filteredList = achievementList.filter(a => a.is_deleted !== true)
+  
+  stats.value.total_count = filteredList.length
+  stats.value.competition_count = filteredList.filter(a => a.type_id === '1').length
+  stats.value.research_count = filteredList.filter(a => a.type_id === '2').length
+  stats.value.project_count = filteredList.filter(a => a.type_id === '3').length
+  stats.value.paper_count = filteredList.filter(a => a.type_id === '4').length
+  stats.value.patent_count = filteredList.filter(a => a.type_id === '5').length
+  stats.value.certificate_count = filteredList.filter(a => a.type_id === '6').length
 }
 
 // 获取成果的实际类型字段值 - 支持多种字段名，增强安全性
@@ -318,7 +321,8 @@ const isAchievementOfType = (achievement: any, targetTypes: string[]): boolean =
 
 // 计算全部成果的统计数据 - 响应式计算，支持category字段
 const allStats = computed(() => {
-  const allAchievements = achievements.value
+  // 过滤掉已软删除的成果
+  const allAchievements = achievements.value.filter(a => a.is_deleted !== true)
   return {
     total_count: allAchievements.length,
     // 竞赛类：支持 '1', 'competition', 'contest', '竞赛类'
@@ -457,7 +461,9 @@ async function fetchAchievementData() {
             // 修复获奖时间字段映射，优先使用后端的date字段
             awardedAt: item.date || item.awardedAt || item.awardDate || item.award_date || item.createdAt || new Date().toISOString(),
             // 保留原始的date字段
-            date: item.date || item.awardedAt || item.awardDate || item.award_date || item.createdAt || new Date().toISOString()
+            date: item.date || item.awardedAt || item.awardDate || item.award_date || item.createdAt || new Date().toISOString(),
+            // 保留软删除标记
+            is_deleted: item.is_deleted === true ? true : false
           }
           
           // 调试信息 - 显示类型字段的映射情况
@@ -545,7 +551,16 @@ const filtered_achievements = computed((): AchievementItem[] => {
     return []
   }
   
+  // 强制重新计算，确保响应式更新
+  console.log('重新计算filtered_achievements，当前成果总数:', achievements.value.length)
+  
   const result = achievements.value.filter((achievement: AchievementItem) => {
+    // 软删除过滤 - 排除已标记为删除的成果
+    if (achievement.is_deleted === true) {
+      console.log(`成果 ${achievement.id} 已被软删除，不显示`)
+      return false
+    }
+    
     // 关键词筛选
     if (search_key.value && !achievement.title?.includes(search_key.value)) {
       return false
@@ -1189,7 +1204,10 @@ const refreshAchievements = async (): Promise<void> => {
 }
 
 // 使用环境变量来设置axios的基础URL
+import http from '@/server/api/http'
 import { getBaseURL } from '@/server/api/http'
+// 导入nextTick以确保DOM更新
+import { nextTick } from 'vue'
 
 const axiosInstance = axios.create({
   baseURL: getBaseURL().replace('/api', ''), // 使用环境变量设置API基础URL，移除'/api'后缀
@@ -1204,41 +1222,51 @@ const delete_achievement = async (id: string): Promise<void> => {
       content: '您确定要删除此成果吗？',
       positiveText: '确定',
       negativeText: '取消',
+      // 使用箭头函数确保this绑定正确
       onPositiveClick: async () => {
         try {
           // 显示加载状态
           loading.value = true;
           message.loading('正在删除...');
 
-          // 先通过GET请求确认数据存在
-          try {
-            // 使用fetchAchievementById获取单个成果数据
-            const checkResponse = await fetchAchievementById(id);
-            console.log('成果数据确认:', checkResponse);
-            
-            // 确认数据存在后，再执行删除操作
-            if (checkResponse && checkResponse.data) {
-              // 使用API函数删除数据，而不是直接使用axios
-              const response = await deleteAchievement(id);
-              console.log('删除成果响应:', response);
+          // 使用API函数发送软删除请求
+          // API函数内部已包含软删除标记
+          const response = await deleteAchievement(id);
+          console.log('软删除成果响应:', response);
 
-              // 检查响应状态
-              if (response && (response.status === 200 || response.status === 204)) {
-                message.success('删除成功');
-                
-                // 删除成功后，执行更新成果展示区域的逻辑
-                await refreshAchievements();
-              } else {
-                console.error('删除响应异常:', response);
-                message.error('删除失败，服务器响应异常');
-              }
-            } else {
-              console.error('成果数据不存在或无法访问');
-              message.error('删除失败，成果数据不存在或无法访问');
+          // 检查响应状态 - 204 No Content 是正常的成功响应
+          if (response && (response.status === 200 || response.status === 204)) {
+            message.success('删除成功');
+            
+            // 立即在本地数据中标记该成果为已删除
+            const index = achievements.value.findIndex(item => item.id === id);
+            if (index !== -1) {
+              // 更新本地数据，标记为已删除
+              achievements.value[index].is_deleted = true;
+              console.log(`成果 ${id} 已在本地标记为软删除`);
+              
+              // 强制触发视图更新 - 创建新数组引用以确保响应式更新
+              achievements.value = [...achievements.value];
+              
+              // 使用nextTick确保DOM更新
+              nextTick(() => {
+                console.log('DOM已更新，filtered_achievements长度:', filtered_achievements.value.length);
+                // 重新计算统计数据
+                calculateStats(achievements.value);
+              });
+              
+              // 更新缓存
+              cache_achievements_data();
             }
-          } catch (checkError) {
-            console.error('获取成果数据失败:', checkError);
-            message.error('删除失败，无法确认成果数据是否存在');
+            
+            // 不再需要从服务器刷新数据，因为本地已更新
+            // 204 No Content 响应是正常的成功响应，表示请求成功但没有返回内容
+            console.log('本地数据已更新，无需从服务器刷新');
+            // 如果遇到问题，可以取消下面的注释重新启用服务器刷新
+            // await refreshAchievements();
+          } else {
+            console.error('删除响应异常:', response);
+            message.error('删除失败，服务器响应异常');
           }
         } catch (error) {
           console.error('删除失败:', error);

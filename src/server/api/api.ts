@@ -77,7 +77,10 @@ export const deleteAchievement = (id: ID) => {
   // 确保URL格式正确
   const url = `/achievements/${id}`;
   console.log(`删除成果URL: ${url}`);
-  return http.delete(url);
+  // 发送软删除标记
+  return http.delete(url, {
+    data: { is_deleted: true } // 在请求体中设置软删除标记
+  });
 }
 export const viewAchievementDetail = (id: ID) => http.get(`/achievements/${id}/`)
 

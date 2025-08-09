@@ -19,11 +19,6 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../components/student/login/LoginPage.vue')
   },
   {
-    path: '/student/register',
-    name: 'studentRegister',
-    component: () => import('../components/student/register/RegisterPage.vue')
-  },
-  {
     path: '/student',
     component: () => import('../layout/StudentLayout.vue'),
     meta: { requiresAuth: true },

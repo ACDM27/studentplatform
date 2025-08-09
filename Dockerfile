@@ -7,14 +7,17 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
+# 安装pnpm
+RUN npm install -g pnpm
+
 # 安装依赖
-RUN npm install
+RUN pnpm install
 
 # 复制其余文件
 COPY . .
 
 # 构建 Vue 项目
-RUN npm run build
+RUN pnpm run build
 
 # 启动前端服务
 CMD ["npm", "run", "serve"]
