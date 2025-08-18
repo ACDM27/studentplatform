@@ -130,7 +130,7 @@
         
         <div class="login-footer">
           <n-button text class="forget-btn">忘记密码？</n-button>
-          <n-button text class="register-btn" @click="goToRegister">注册账号</n-button>
+          <n-button text class="register-btn">注册账号</n-button>
         </div>
       </div>
     </div>
