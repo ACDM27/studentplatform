@@ -107,120 +107,102 @@ import type {
 
 // 认证相关 API
 export const postAuthLocal = async (data: IPostAuthLocalReq): Promise<IPostAuthLocalResp> => {
-  const response = await http.post('/auth/local', data, {
+  // 拦截器已返回 data
+  return await http.post('/auth/local', data, {
     headers: {
       'Content-Type': 'application/json'
     }
   })
-  return response.data
 }
 
 export const postAuthLogout = async (): Promise<IPostAuthLogoutResp> => {
-  const response = await http.post('/auth/logout')
-  return response.data
+  return await http.post('/auth/logout')
 }
 
 export const postAuthRefresh = async (): Promise<IPostAuthRefreshResp> => {
-  const response = await http.post('/auth/refresh')
-  return response.data
+  return await http.post('/auth/refresh')
 }
 
 // 学生相关 API
 export const getStudentsMe = async (): Promise<IGetStudentsMeResp> => {
-  const response = await http.get('/students/me')
-  return response.data
+  return await http.get('/users/me')
 }
 
 export const getStudentsById = async ({ id }: IGetStudentsByIdParams): Promise<IGetStudentsByIdResp> => {
-  const response = await http.get(`/students/${id}`)
-  return response.data
+  return await http.get(`/students/${id}`)
 }
 
 export const getStudentsProfile = async (): Promise<IGetStudentsProfileResp> => {
-  const response = await http.get('/students/profile')
-  return response.data
+  return await http.get('/students/profile')
 }
 
 export const getStudentsStatistics = async (): Promise<IGetStudentsStatisticsResp> => {
-  const response = await http.get('/students/statistics')
-  return response.data
+  return await http.get('/students/statistics')
 }
 
 // 课程相关 API
 export const getCourses = async (): Promise<IGetCoursesResp> => {
-  const response = await http.get('/courses')
-  return response.data
+  return await http.get('/courses')
 }
 
 export const getCoursesById = async ({ id }: IGetCoursesByIdParams): Promise<IGetCoursesByIdResp> => {
-  const response = await http.get(`/courses/${id}`)
-  return response.data
+  return await http.get(`/courses/${id}`)
 }
 
 export const postCourse = async (data: IPostCourseReq): Promise<IPostCourseResp> => {
-  const response = await http.post('/courses', data)
-  return response.data
+  return await http.post('/courses', data)
 }
 
 export const putCourse = async (id: ID, data: IPutCourseReq): Promise<IPutCourseResp> => {
-  const response = await http.put(`/courses/${id}`, data)
-  return response.data
+  return await http.put(`/courses/${id}`, data)
 }
 
 export const deleteCourse = async ({ id }: IDeleteCourseParams): Promise<IDeleteCourseResp> => {
-  const response = await http.delete(`/courses/${id}`)
-  return response.data
+  return await http.delete(`/courses/${id}`)
 }
 
 // 作业相关 API
 export const getAssignments = async (): Promise<IGetAssignmentsResp> => {
-  const response = await http.get('/assignments')
-  return response.data
+  return await http.get('/assignments')
 }
 
 export const getAssignmentsById = async ({ id }: IGetAssignmentsByIdParams): Promise<IGetAssignmentsByIdResp> => {
-  const response = await http.get(`/assignments/${id}`)
-  return response.data
+  return await http.get(`/assignments/${id}`)
 }
 
 export const postAssignmentsSubmit = async (data: IPostAssignmentsSubmitReq): Promise<IPostAssignmentsSubmitResp> => {
-  const response = await http.post('/assignments/submit', data)
-  return response.data
+  return await http.post('/assignments/submit', data)
 }
 
 // 咨询相关 API
 export const getConsultants = async (): Promise<IGetConsultantsResp> => {
-  const response = await http.get('/consultants')
-  return response.data
+  return await http.get('/consultants')
 }
 
 export const getConsultantsById = async ({ id }: IGetConsultantsByIdParams): Promise<IGetConsultantsByIdResp> => {
-  const response = await http.get(`/consultants/${id}`)
-  return response.data
+  return await http.get(`/consultants/${id}`)
 }
 
 export const postConsultationsBook = async (data: IPostConsultationsBookReq): Promise<IPostConsultationsBookResp> => {
-  const response = await http.post('/consultations/book', data)
-  return response.data
+  return await http.post('/consultations/book', data)
 }
 
 // 荣誉相关 API
 export const getAchievements = async (): Promise<IGetAchievementsResp> => {
-  const response = await http.get('/achievements')
-  return response.data
+  return await http.get('/achievements')
 }
 
-export const getAchievementById = async ({ id }: IGetAchievementByIdParams): Promise<IGetAchievementByIdResp> => {
-  console.log('getAchievementById 调用，参数:', { id })
+export const getAchievementById = async ({ id, includeDeleted = false }: IGetAchievementByIdParams & { includeDeleted?: boolean }): Promise<IGetAchievementByIdResp> => {
+  console.log('getAchievementById 调用，参数:', { id, includeDeleted })
   console.log('请求URL:', `/achievements/${id}`)
   
   try {
-    const response = await http.get(`/achievements/${id}`)
-    console.log('getAchievementById 原始响应:', response)
-    console.log('getAchievementById 响应数据:', response.data)
-    console.log('getAchievementById 响应状态:', response.status)
+    const params = includeDeleted ? { includeDeleted: true } : {}
+    // 拦截器已经返回 data，这里直接使用
+    const data = await http.get(`/achievements/${id}`, { params })
+    console.log('getAchievementById 响应数据:', data)
     
-    return response.data
+    return data
   } catch (error: any) {
     console.error('getAchievementById 请求失败:', error)
     if (error.response) {
@@ -238,143 +220,116 @@ export const getFeedbacks = async (params?: { page?: number, pageSize?: number }
   if (params?.pageSize) queryParams.append('pagination[pageSize]', params.pageSize.toString())
   
   const queryString = queryParams.toString()
-  const response = await http.get(`/feedbacks?${queryString}`)
-  return response.data
+  return await http.get(`/feedbacks?${queryString}`)
 }
 
 export const getFeedbackById = async ({ id }: IGetFeedbackByIdParams): Promise<IGetFeedbackByIdResp> => {
-  const response = await http.get(`/feedbacks/${id}`)
-  return response.data
+  return await http.get(`/feedbacks/${id}`)
 }
 
 export const postFeedback = async (data: IPostFeedbackReq): Promise<IPostFeedbackResp> => {
-  const response = await http.post('/feedbacks', data)
-  return response.data
+  return await http.post('/feedbacks', data)
 }
 
 export const putFeedback = async (id: ID, data: IPutFeedbackReq): Promise<IPutFeedbackResp> => {
-  const response = await http.put(`/feedbacks/${id}`, { data })
-  return response.data
+  return await http.put(`/feedbacks/${id}`, { data })
 }
 
 export const deleteFeedback = async ({ id }: IDeleteFeedbackParams): Promise<IDeleteFeedbackResp> => {
-  const response = await http.delete(`/feedbacks/${id}`)
-  return response.data
+  return await http.delete(`/feedbacks/${id}`)
 }
 
 // 简历相关 API
 export const getResume = async (): Promise<IGetResumeResp> => {
-  const response = await http.get('/resume')
-  return response.data
+  return await http.get('/resume')
 }
 
 export const putResume = async (data: IPutResumeReq): Promise<IPutResumeResp> => {
-  const response = await http.put('/resume', data)
-  return response.data
+  return await http.put('/resume', data)
 }
 
 // 教师相关 API
 export const getTeachers = async (): Promise<IGetTeachersResp> => {
-  const response = await http.get('/teachers')
-  return response.data
+  return await http.get('/teachers')
 }
 
 export const getTeachersById = async ({ id }: IGetTeachersByIdParams): Promise<IGetTeachersByIdResp> => {
-  const response = await http.get(`/teachers/${id}`)
-  return response.data
+  return await http.get(`/teachers/${id}`)
 }
 
 // 新闻相关 API
 export const getNews = async (): Promise<IGetNewsResp> => {
-  const response = await http.get('/news')
-  return response.data
+  return await http.get('/news')
 }
 
 export const getNewsById = async ({ id }: IGetNewsByIdParams): Promise<IGetNewsByIdResp> => {
-  const response = await http.get(`/news/${id}`)
-  return response.data
+  return await http.get(`/news/${id}`)
 }
 
 export const getNewsByCategory = async (category: string): Promise<IGetNewsResp> => {
-  const response = await http.get(`/news?category=${category}`)
-  return response.data
+  return await http.get(`/news?category=${category}`)
 }
 
 export const postNews = async (data: IPostNewsReq): Promise<IPostNewsResp> => {
-  const response = await http.post('/news', data)
-  return response.data
+  return await http.post('/news', data)
 }
 
 export const putNews = async (id: ID, data: IPutNewsReq): Promise<IPutNewsResp> => {
-  const response = await http.put(`/news/${id}`, data)
-  return response.data
+  return await http.put(`/news/${id}`, data)
 }
 
 export const deleteNews = async (id: ID): Promise<IDeleteNewsResp> => {
-  const response = await http.delete(`/news/${id}`)
-  return response.data
+  return await http.delete(`/news/${id}`)
 }
 
 // 人才市场相关 API
 export const getCompanies = async (): Promise<IGetCompaniesResp> => {
-  const response = await http.get('/companies')
-  return response.data
+  return await http.get('/companies')
 }
 
 export const getCompanyById = async ({ id }: IGetCompanyByIdParams): Promise<IGetCompanyByIdResp> => {
-  const response = await http.get(`/companies/${id}`)
-  return response.data
+  return await http.get(`/companies/${id}`)
 }
 
 export const getPositions = async (): Promise<IGetPositionsResp> => {
-  const response = await http.get('/positions')
-  return response.data
+  return await http.get('/positions')
 }
 
 export const getPositionById = async ({ id }: IGetPositionByIdParams): Promise<IGetPositionByIdResp> => {
-  const response = await http.get(`/positions/${id}`)
-  return response.data
+  return await http.get(`/positions/${id}`)
 }
 
 export const postContactCompany = async (data: IPostContactCompanyReq): Promise<IPostContactCompanyResp> => {
-  const response = await http.post('/companies/contact', data)
-  return response.data
+  return await http.post('/companies/contact', data)
 }
 
 export const postApplyPosition = async (data: IPostApplyPositionReq): Promise<IPostApplyPositionResp> => {
-  const response = await http.post('/positions/apply', data)
-  return response.data
+  return await http.post('/positions/apply', data)
 }
 
 export const getMarketStats = async (): Promise<IGetMarketStatsResp> => {
-  const response = await http.get('/market/stats')
-  return response.data
+  return await http.get('/market/stats')
 }
 
 // 活动相关 API
 export const getActivities = async (): Promise<IGetActivitiesResp> => {
-  const response = await http.get('/activities')
-  return response.data
+  return await http.get('/activities')
 }
 
 export const getActivityById = async ({ id }: IGetActivityByIdParams): Promise<IGetActivityByIdResp> => {
-  const response = await http.get(`/activities/${id}`)
-  return response.data
+  return await http.get(`/activities/${id}`)
 }
 
 export const postActivity = async (data: IPostActivityReq): Promise<IPostActivityResp> => {
-  const response = await http.post('/activities', data)
-  return response.data
+  return await http.post('/activities', data)
 }
 
 export const putActivity = async (id: ID, data: IPutActivityReq): Promise<IPutActivityResp> => {
-  const response = await http.put(`/activities/${id}`, data)
-  return response.data
+  return await http.put(`/activities/${id}`, data)
 }
 
 export const deleteActivity = async ({ id }: IDeleteActivityParams): Promise<IDeleteActivityResp> => {
-  const response = await http.delete(`/activities/${id}`)
-  return response.data
+  return await http.delete(`/activities/${id}`)
 }
 
 // 咨询师相关 API
@@ -406,18 +361,15 @@ export const getOnlineConsultTeachers = async (): Promise<IGetConsultTeachersRes
 }
 
 export const postConsultTeacher = async (data: IPostConsultTeacherReq): Promise<IPostConsultTeacherResp> => {
-  const response = await http.post('/consult-teachsers', data)
-  return response.data
+  return await http.post('/consult-teachsers', data)
 }
 
 export const putConsultTeacher = async (id: ID, data: IPutConsultTeacherReq): Promise<IPutConsultTeacherResp> => {
-  const response = await http.put(`/consult-teachsers/${id}`, data)
-  return response.data
+  return await http.put(`/consult-teachsers/${id}`, data)
 }
 
 export const deleteConsultTeacher = async ({ id }: IDeleteConsultTeacherParams): Promise<IDeleteConsultTeacherResp> => {
-  const response = await http.delete(`/consult-teachsers/${id}`)
-  return response.data
+  return await http.delete(`/consult-teachsers/${id}`)
 }
 
 // 默认导出所有API函数

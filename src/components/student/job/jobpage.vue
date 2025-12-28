@@ -326,7 +326,7 @@ const message = useMessage()
 
 // 用户信息
 const user_info = ref({
-  name: '张三',
+  name: '刘在行',
   major: '计算机科学与技术',
   grade: '2024届',
   skills: ['Java', 'Python', '前端开发', '数据分析', '机器学习']

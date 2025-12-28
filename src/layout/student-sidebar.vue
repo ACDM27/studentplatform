@@ -91,12 +91,12 @@
               fallback-src="" 
               style="background-color: #409eff;"
             >
-              {{ user_name.charAt(0) }}
+              {{ username.charAt(0) }}
             </n-avatar>
           </div>
           <transition name="fade">
             <div class="user-detail" v-show="!is_collapse">
-              <span class="user-name">{{ user_name }}</span>
+              <span class="user-name" :class="{ 'loading': loading }">{{ username }}</span>
               <span class="user-role">{{ user_role }}</span>
             </div>
           </transition>
@@ -169,14 +169,20 @@ import {
   CaretDown,
   CaretRight
 } from '../utils/icons'
+import { getStudentsMe, getStudentsProfile } from '../apis/index'
 
 const router = useRouter()
 const route = useRoute()
 const is_collapse = inject('sidebarCollapsed', ref(false))
-const user_name = ref('张三')
+const user_name = ref('加载中...')
+const username = computed(() => user_name.value)
 const user_role = ref('学生')
 const user_avatar = ref('')
+const user_email = ref('')
+const user_confirmed = ref(false)
+const user_blocked = ref(false)
 const activeMenu = ref('dashboard')
+const loading = ref(false)
 
 // 定义菜单项和菜单组的接口
 interface MenuItem {
@@ -202,9 +208,8 @@ const tooltipStyle = ref<Record<string, string>>({})
 const groupCollapsed = reactive<Record<string, boolean>>({
   study_mgmt: false,
   info_query: false,
-  service_req: false,
   career_dev: false,
-  org_act: false
+  portrait: false
 })
 
 const menu_options = ref([
@@ -215,8 +220,6 @@ const menu_options = ref([
     icon: () => h(IconBook), // 学习管理图标
     children: [
       { label: '首页仪表盘', key: 'dashboard', icon: () => h(IconHome) },
-      { label: '数据分析大屏', key: 'data_screen', icon: () => h(IconChartBar) },
-      { label: '作业管理', key: 'homework', icon: () => h(IconFileText) },
       { label: '成果收集与展示', key: 'achievement', icon: () => h(IconAward) }
     ]
   },
@@ -231,17 +234,6 @@ const menu_options = ref([
     ]
   },
   {
-    label: '服务申请',
-    key: 'service_req',
-    type: 'group',
-    icon: () => h(IconFileDescription), // 服务申请图标
-    children: [
-      { label: '咨询预约', key: 'consult', icon: () => h(IconCalendar) },
-      { label: '反馈与申诉', key: 'feedback', icon: () => h(IconMessageCircle) },
-      { label: '问卷与投票', key: 'survey', icon: () => h(IconFileText) }
-    ]
-  },
-  {
     label: '就业发展',
     key: 'career_dev',
     type: 'group',
@@ -253,15 +245,13 @@ const menu_options = ref([
     ]
   },
   {
-    label: '活动组织',
-    key: 'org_act',
+    label: '个人画像',
+    key: 'portrait',
     type: 'group',
-    icon: () => h(IconSchool), // 活动组织图标
+    icon: () => h(IconUser), // 个人画像图标
     children: [
-      { label: '学院活动', key: 'college_act', icon: () => h(IconSchool) },
-      { label: '校园活动', key: 'campus_act', icon: () => h(IconCalendar) },
-      { label: '协会活动', key: 'assoc_act', icon: () => h(IconUsers) },
-      { label: '团委活动', key: 'youth_act', icon: () => h(IconAward) }
+      { label: 'AI智能分析', key: 'portrait_analysis', icon: () => h(IconChartBar) },
+      { label: 'AI对话助手', key: 'portrait_chat', icon: () => h(IconMessageCircle) }
     ]
   }
 ])
@@ -291,10 +281,98 @@ const user_options = ref([
   }
 ])
 
+/* ---------- 获取用户信息 ---------- */
+const fetchUserInfo = async () => {
+  try {
+    loading.value = true
+    console.log('开始获取用户信息...')
+    
+    // 检查是否有token
+    const token = localStorage.getItem('token')
+    console.log('当前token:', token ? '存在' : '不存在')
+    
+    // 获取基本用户信息
+    console.log('调用getStudentsMe API...')
+    const userResponse = await getStudentsMe()
+    console.log('getStudentsMe响应:', userResponse)
+    
+    if (userResponse) {
+      // 设置基本用户信息
+      user_name.value = userResponse.username || '用户'
+      user_email.value = userResponse.email || ''
+      user_confirmed.value = userResponse.confirmed || false
+      user_blocked.value = userResponse.blocked || false
+      
+      console.log('设置用户基本信息:', {
+        name: user_name.value,
+        email: user_email.value,
+        confirmed: user_confirmed.value,
+        blocked: user_blocked.value
+      })
+      
+      // 设置用户角色
+      if (userResponse.role && userResponse.role.name) {
+        user_role.value = userResponse.role.name === 'Authenticated' ? '学生' : userResponse.role.name
+        console.log('设置用户角色:', user_role.value)
+      }
+    } else {
+      console.warn('getStudentsMe返回空响应')
+    }
+    
+    // 尝试获取详细档案信息
+    try {
+      console.log('调用getStudentsProfile API...')
+      const profileResponse = await getStudentsProfile()
+      console.log('getStudentsProfile响应:', profileResponse)
+      
+      if (profileResponse && profileResponse.profile) {
+        // 如果档案中有姓名，优先使用档案中的姓名
+        if (profileResponse.profile.name) {
+          user_name.value = profileResponse.profile.name
+          console.log('使用档案姓名:', user_name.value)
+        }
+        // 设置头像
+        if (profileResponse.profile.avatar) {
+          user_avatar.value = profileResponse.profile.avatar
+          console.log('设置用户头像:', user_avatar.value)
+        }
+      } else {
+        console.warn('getStudentsProfile返回空档案信息')
+      }
+    } catch (profileError) {
+      // 档案信息获取失败时，继续使用基本用户信息
+      console.warn('获取用户档案信息失败:', profileError)
+    }
+    
+    console.log('用户信息获取完成')
+    
+  } catch (error: any) {
+    console.error('获取用户信息失败:', error)
+    console.error('错误详情:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    })
+    
+    // 如果是401错误，说明需要登录
+    if (error.response?.status === 401) {
+      console.warn('用户未登录，显示默认信息')
+      user_name.value = '未登录用户'
+    } else {
+      user_name.value = '用户'
+    }
+    user_role.value = '学生'
+  } finally {
+    loading.value = false
+  }
+}
+
 /* ---------- 组件挂载时初始化 ---------- */
 onMounted(() => {
   // 根据当前路由设置活跃菜单
   updateActiveMenu()
+  // 获取用户信息
+  fetchUserInfo()
 })
 
 /* ---------- 监听路由变化 ---------- */
@@ -307,8 +385,6 @@ function updateActiveMenu() {
   const path = route.path
   const routeMap: Record<string, string> = {
     '/student/dashboard': 'dashboard',
-    '/student/data-screen': 'data_screen',
-    '/student/homework': 'homework',
     '/student/achievement': 'achievement',
     '/student/achievement-collect': 'achievement',
     '/student/teacher-info': 'teacher_info',
@@ -316,12 +392,12 @@ function updateActiveMenu() {
     '/student/teacher-favorites': 'teacher_info',
     '/student/courses': 'course_schedule',
     '/student/course-schedule': 'course_schedule',
-    '/student/consult': 'consult',
-    '/student/feedback': 'feedback',
-    '/student/survey': 'survey',
     '/student/resume': 'resume',
     '/student/job-recommendation': 'job-recommendation',
-    '/student/talent-market': 'talent_market'
+    '/student/talent-market': 'talent_market',
+    '/student/portrait': 'portrait_analysis',
+    '/student/portrait/chat': 'portrait_chat',
+    '/student/portrait/ai-chat': 'portrait_ai_chat'
   }
   
   // 特殊处理教师详情页面
@@ -330,17 +406,7 @@ function updateActiveMenu() {
     return
   }
   
-  // 特殊处理活动页面，根据查询参数确定具体的活动类型
-  if (path === '/student/activities') {
-    const fromParam = route.query.from
-    if (fromParam && ['college_act', 'campus_act', 'assoc_act', 'youth_act'].includes(fromParam as string)) {
-      activeMenu.value = fromParam as string
-    } else {
-      activeMenu.value = 'college_act' // 默认为学院活动
-    }
-  } else {
-    activeMenu.value = routeMap[path] || 'dashboard'
-  }
+  activeMenu.value = routeMap[path] || 'dashboard'
 }
 
 /* ---------- 切换分组展开/折叠 ---------- */
@@ -427,34 +493,18 @@ function handleMenuClick(key: string) {
   
   const routeMap: Record<string, string> = {
     dashboard: '/student/dashboard',
-    data_screen: '/student/data-screen',
-    homework: '/student/homework',
     achievement: '/student/achievement',
     teacher_info: '/student/teacher-info',
     course_schedule: '/student/course-schedule',
-    consult: '/student/consult',
-    feedback: '/student/feedback',
-    survey: '/student/survey',
     resume: '/student/resume',
     'job-recommendation': '/student/job-recommendation',
     talent_market: '/student/talent-market',
-    college_act: '/student/activities',
-    campus_act: '/student/activities',
-    assoc_act: '/student/activities',
-    youth_act: '/student/activities'
+    portrait_analysis: '/student/portrait',
+    portrait_chat: '/student/portrait/chat'
   }
   
   if (routeMap[key]) {
-    // 如果是活动相关菜单，添加来源参数
-    const activityMenus = ['college_act', 'campus_act', 'assoc_act', 'youth_act']
-    if (activityMenus.includes(key)) {
-      router.push({
-        path: routeMap[key],
-        query: { from: key }
-      })
-    } else {
-      router.push(routeMap[key])
-    }
+    router.push(routeMap[key])
   }
   
   // 点击菜单后隐藏弹窗
@@ -471,7 +521,7 @@ function handleUserSelect(key: string) {
 /* ---------- 登出处理 ---------- */
 function handleLogout() {
   // localStorage.removeItem('token')
-  router.push('/student/login')
+  router.push('/login')
 }
 </script>
 
@@ -743,6 +793,21 @@ function handleLogout() {
   font-weight: 600;
   color: #fff;
   margin-bottom: 2px;
+  transition: opacity 0.3s ease;
+}
+
+.user-name.loading {
+  opacity: 0.7;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .user-role {

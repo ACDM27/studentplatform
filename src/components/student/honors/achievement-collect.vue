@@ -124,13 +124,34 @@
             </n-grid-item>
             
             <n-grid-item>
-              <n-form-item label="导师姓名" path="tutor_name">
-                <n-input 
-                  v-model:value="form_data.tutor_name" 
-                  placeholder="请输入导师姓名"
+              <n-form-item label="导师学院" path="tutor_department">
+                <n-select 
+                  v-model:value="form_data.tutor_department" 
+                  :options="department_opts" 
+                  placeholder="请选择导师学院"
+                  @update:value="handle_department_change"
                   clearable
                 />
               </n-form-item>
+            </n-grid-item>
+          </n-grid>
+
+          <n-grid :cols="2" :x-gap="24" :y-gap="16">
+            <n-grid-item>
+              <n-form-item label="导师姓名" path="tutor_name">
+                <n-select 
+                  v-model:value="form_data.tutor_name" 
+                  :options="filtered_teacher_opts" 
+                  placeholder="请先选择学院，再选择导师"
+                  :disabled="!form_data.tutor_department"
+                  clearable
+                  filterable
+                />
+              </n-form-item>
+            </n-grid-item>
+            
+            <n-grid-item>
+              <!-- 预留空位，保持布局平衡 -->
             </n-grid-item>
           </n-grid>
         </div>
@@ -211,8 +232,7 @@ import {
   IconSend as Send,
   IconArrowLeft as ArrowLeft
 } from '@tabler/icons-vue'
-import { createAchievement } from '@/server/api/api'
-
+import { createAchievement, fetchTeachers, fetchTeachersByDept, fetchTeacherDepartments, fetchTeachersByDepartmentId } from '@/server/api/api'
 const router = useRouter()
 const message = useMessage()
 
@@ -231,7 +251,8 @@ const form_data = ref({
   date: null as number | null, // 获奖日期，对应后端date字段
   level: '',
   title: '',
-  tutor_name: '',
+  tutor_department: '', // 导师学院
+  tutor_name: '', // 导师姓名
   attachments: [] as UploadFileInfo[]
 })
 
@@ -280,9 +301,11 @@ const form_rules = {
       }
     }
   ],
+  tutor_department: [
+    { required: true, message: '请选择导师所属学院', trigger: 'change' }
+  ],
   tutor_name: [
-    { required: true, message: '请输入导师姓名', trigger: 'blur' },
-    { min: 2, max: 30, message: '导师姓名长度应在2-30字符之间', trigger: 'blur' }
+    { required: true, message: '请选择导师姓名', trigger: 'change' }
   ]
 }
 
@@ -312,6 +335,31 @@ const level_opts = [
   { label: '院级', value: 'college' }
 ]
 
+// 学院选项配置
+const department_opts = [
+  { label: '信息技术学院', value: 'computer' },
+  { label: '外语学院', value: 'foreign_languages' },
+  { label: '法学院', value: 'law' }
+]
+
+// 教师数据管理
+const teachers_data = ref<any[]>([])
+const current_department_teachers = ref<any[]>([])
+const loading_teachers = ref(false)
+
+// 根据当前学院的教师数据生成选项
+const filtered_teacher_opts = computed(() => {
+  if (!form_data.value.tutor_department) {
+    return []
+  }
+  
+  return current_department_teachers.value.map(teacher => ({
+    label: teacher.name || '未知教师',
+    value: teacher.name || '',
+    teacher_id: teacher.id
+  }))
+})
+
 // 允许的文件类型配置
 const allowed_file_types = {
   'application/pdf': 'PDF文件',
@@ -335,6 +383,260 @@ const go_back = () => {
 const handle_date_change = (value: number | null) => {
   // 日期变化时无需额外处理，直接使用 date
   console.log('日期已更新:', value ? new Date(value).toLocaleDateString() : '未选择')
+}
+
+// 处理学院变化
+const handle_department_change = async (value: string) => {
+  // 清空导师选择
+  form_data.value.tutor_name = ''
+  console.log('学院已更新:', value)
+  
+  // 根据选择的学院获取对应的教师信息
+  if (value) {
+    await fetch_teachers_by_department(value)
+  }
+}
+
+// 获取所有教师数据（初始化时使用）
+const fetch_teachers_data = async () => {
+  if (loading_teachers.value) return
+  
+  try {
+    loading_teachers.value = true
+    console.log('开始获取教师数据...')
+    
+    const response = await fetchTeachers()
+    console.log('教师API响应:', response)
+    
+    if (response && response.data) {
+      let teacherData: any[] = []
+      
+      // 处理不同的响应格式
+      if (Array.isArray(response.data)) {
+        teacherData = response.data
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        teacherData = response.data.data
+      } else if (response.data.data && typeof response.data.data === 'object') {
+        // 处理Strapi格式
+        const strapiData = response.data.data
+        if (Array.isArray(strapiData)) {
+          teacherData = strapiData.map((item: any) => ({
+            id: item.id,
+            ...item.attributes
+          }))
+        }
+      }
+      
+      // 标准化教师数据
+      teachers_data.value = teacherData.map((item: any) => ({
+        id: item.id?.toString() || '',
+        name: item.name || '',
+        title: item.title || '',
+        department: item.department || item.college || '',
+        research_direction: item.research_direction || item.researchContent || '',
+        email: item.email || '',
+        phone: item.phone || ''
+      }))
+      
+      console.log('处理后的教师数据:', teachers_data.value)
+      message.success(`成功加载 ${teachers_data.value.length} 位教师信息`)
+    } else {
+      console.warn('教师API返回数据格式异常')
+      message.warning('教师数据加载异常，请稍后重试')
+    }
+  } catch (error: any) {
+    console.error('获取教师数据失败:', error)
+    message.error('获取教师信息失败，请检查网络连接')
+  } finally {
+    loading_teachers.value = false
+  }
+}
+
+// 根据学院获取教师数据
+const fetch_teachers_by_department = async (department: string) => {
+  try {
+    loading_teachers.value = true
+    console.log(`开始获取${department}学院教师数据...`)
+    
+    // 首先尝试获取所有学院信息，然后匹配
+    console.log('尝试获取所有学院信息...')
+    let allDepartmentsResponse
+    try {
+      allDepartmentsResponse = await fetchTeacherDepartments()
+      console.log('所有学院信息API响应:', allDepartmentsResponse)
+    } catch (error) {
+      console.warn('无法从后端获取学院信息，使用备用数据:', error)
+      // 如果后端没有学院数据，使用前端定义的学院映射
+      allDepartmentsResponse = {
+        data: [
+          { id: '1', code: 'computer', name: '计算机学院', attributes: { code: 'computer', name: '计算机学院' } },
+          { id: '2', code: 'math', name: '数学学院', attributes: { code: 'math', name: '数学学院' } },
+          { id: '3', code: 'physics', name: '物理学院', attributes: { code: 'physics', name: '物理学院' } },
+          { id: '4', code: 'chemistry', name: '化学学院', attributes: { code: 'chemistry', name: '化学学院' } },
+          { id: '5', code: 'biology', name: '生物学院', attributes: { code: 'biology', name: '生物学院' } },
+          { id: '6', code: 'economics', name: '经济学院', attributes: { code: 'economics', name: '经济学院' } },
+          { id: '7', code: 'management', name: '管理学院', attributes: { code: 'management', name: '管理学院' } },
+          { id: '8', code: 'foreign', name: '外语学院', attributes: { code: 'foreign', name: '外语学院' } }
+        ]
+      }
+    }
+    
+    let departmentId: string | null = null
+    
+    // 处理所有学院信息响应
+    if (allDepartmentsResponse) {
+      console.log('原始学院API响应:', allDepartmentsResponse)
+      let allDepartmentData: any[] = []
+      
+      // 处理Strapi v5的响应格式
+      if (allDepartmentsResponse.data) {
+        if (Array.isArray(allDepartmentsResponse.data)) {
+          allDepartmentData = allDepartmentsResponse.data
+        } else if (allDepartmentsResponse.data.data && Array.isArray(allDepartmentsResponse.data.data)) {
+          allDepartmentData = allDepartmentsResponse.data.data
+        } else if (typeof allDepartmentsResponse.data === 'object' && allDepartmentsResponse.data.id) {
+          // 单个对象的情况
+          allDepartmentData = [allDepartmentsResponse.data]
+        }
+      } else if (Array.isArray(allDepartmentsResponse)) {
+        allDepartmentData = allDepartmentsResponse
+      }
+      
+      console.log('解析后的学院数据:', allDepartmentData)
+      console.log('当前查找的学院代码:', department)
+      
+      // 查找匹配的学院（通过code字段或name字段）
+      const matchedDepartment = allDepartmentData.find((dept: any) => {
+        const deptData = dept.attributes || dept
+        const code = deptData.code || deptData.Code
+        const name = deptData.name || deptData.Name
+        
+        console.log(`检查学院: ID=${dept.id}, code=${code}, name=${name}`)
+        
+        return code === department || 
+               name === department ||
+               code === department.toLowerCase() ||
+               name?.toLowerCase().includes(department.toLowerCase()) ||
+               department.toLowerCase().includes(name?.toLowerCase())
+      })
+      
+      if (matchedDepartment) {
+        departmentId = matchedDepartment.id?.toString()
+        console.log(`找到匹配的学院:`, matchedDepartment, `ID: ${departmentId}`)
+      } else {
+        console.log(`未找到匹配的学院，可用学院:`, allDepartmentData.map(d => ({
+          id: d.id,
+          code: d.attributes?.code || d.code || d.attributes?.Code || d.Code,
+          name: d.attributes?.name || d.name || d.attributes?.Name || d.Name
+        })))
+        console.log(`查找条件: ${department}`)
+      }
+    } else {
+      console.error('学院API响应为空或无效')
+    }
+    
+    // 如果找到学院ID，则根据学院ID获取教师信息
+    if (departmentId) {
+      console.log(`使用学院ID ${departmentId} 获取教师信息...`)
+      let response
+      try {
+        response = await fetchTeachersByDepartmentId(departmentId)
+        console.log(`${department}学院教师API响应:`, response)
+      } catch (error) {
+        console.warn(`通过学院ID获取教师失败，尝试备用方法:`, error)
+        // 如果通过学院ID获取失败，回退到原方法
+        response = await fetchTeachersByDept(department)
+        console.log(`${department}学院教师API响应(备用方法):`, response)
+      }
+      
+      if (response && response.data) {
+        let teacherData: any[] = []
+        
+        // 处理不同的响应格式
+        if (Array.isArray(response.data)) {
+          teacherData = response.data
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          teacherData = response.data.data
+        } else if (response.data.data && typeof response.data.data === 'object') {
+          // 处理Strapi格式
+          const strapiData = response.data.data
+          if (Array.isArray(strapiData)) {
+            teacherData = strapiData.map((item: any) => ({
+              id: item.id,
+              ...item.attributes
+            }))
+          }
+        }
+        
+        // 标准化教师数据并存储到当前学院教师数据中
+        current_department_teachers.value = teacherData.map((item: any) => ({
+          id: item.id?.toString() || '',
+          name: item.name || '',
+          title: item.title || '',
+          department: item.department || item.college || department,
+          research_direction: item.research_direction || item.researchContent || '',
+          email: item.email || '',
+          phone: item.phone || ''
+        }))
+        
+        console.log(`${department}学院教师数据加载成功:`, current_department_teachers.value)
+        message.success(`成功加载 ${current_department_teachers.value.length} 位${department}学院教师信息`)
+      } else {
+        console.warn(`${department}学院教师API返回数据格式异常`)
+        message.warning(`${department}学院教师数据加载异常，请稍后重试`)
+        current_department_teachers.value = []
+      }
+    } else {
+      // 如果没有找到学院ID，回退到原来的方法
+      console.log(`未找到${department}学院信息，使用备用方法获取教师数据`)
+      const response = await fetchTeachersByDept(department)
+      console.log(`${department}学院教师API响应(备用方法):`, response)
+      
+      if (response && response.data) {
+        let teacherData: any[] = []
+        
+        // 处理不同的响应格式
+        if (Array.isArray(response.data)) {
+          teacherData = response.data
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          teacherData = response.data.data
+        } else if (response.data.data && typeof response.data.data === 'object') {
+          // 处理Strapi格式
+          const strapiData = response.data.data
+          if (Array.isArray(strapiData)) {
+            teacherData = strapiData.map((item: any) => ({
+              id: item.id,
+              ...item.attributes
+            }))
+          }
+        }
+        
+        // 标准化教师数据并存储到当前学院教师数据中
+        current_department_teachers.value = teacherData.map((item: any) => ({
+          id: item.id?.toString() || '',
+          name: item.name || '',
+          title: item.title || '',
+          department: item.department || item.college || department,
+          research_direction: item.research_direction || item.researchContent || '',
+          email: item.email || '',
+          phone: item.phone || ''
+        }))
+        
+        console.log(`${department}学院教师数据加载成功(备用方法):`, current_department_teachers.value)
+        message.success(`成功加载 ${current_department_teachers.value.length} 位${department}学院教师信息`)
+      } else {
+        console.warn(`${department}学院教师API返回数据格式异常`)
+        message.warning(`${department}学院教师数据加载异常，请稍后重试`)
+        current_department_teachers.value = []
+      }
+    }
+  } catch (error: any) {
+    console.error(`获取${department}学院教师数据失败:`, error)
+    message.error(`获取${department}学院教师信息失败，请检查网络连接`)
+    current_department_teachers.value = []
+  } finally {
+    loading_teachers.value = false
+  }
 }
 
 const before_upload = (data: { file: UploadFileInfo }) => {
@@ -387,6 +689,7 @@ const reset_form = () => {
     date: null,
     level: '',
     title: '',
+    tutor_department: '',
     tutor_name: '',
     attachments: []
   })
@@ -434,7 +737,8 @@ const submitAchievementForm = async () => {
         level: form_data.value.level,
         date: form_data.value.date ? new Date(form_data.value.date).toISOString() : new Date().toISOString(),
         title: form_data.value.title.trim(),
-        tutor_name: form_data.value.tutor_name.trim(),
+        tutor_department: form_data.value.tutor_department,
+        tutor_name: form_data.value.tutor_name,
       }
     }
     
@@ -443,15 +747,14 @@ const submitAchievementForm = async () => {
     // 调用API提交到 /api/achievements
     const response = await createAchievement(submit_data)
     
-    if (response.status === 200 || response.status === 201) {
-      message.success('成果提交成功！')
-      // 清除草稿
-      localStorage.removeItem('achievement_draft')
-      // 返回成果展示页面
-      router.push('/student/achievement')
-    } else {
-      throw new Error(`提交失败，状态码：${response.status}`)
-    }
+    // 注意：响应拦截器已经返回了 response.data，所以这里的 response 就是数据本身
+    // 只要没抛出异常就是成功
+    console.log('提交成功，响应数据:', response)
+    message.success('成果提交成功！')
+    // 清除草稿
+    localStorage.removeItem('achievement_draft')
+    // 返回成果展示页面
+    router.push('/student/achievement')
     
   } catch (error: any) {
     console.error('提交失败:', error)
@@ -479,6 +782,9 @@ const submitAchievementForm = async () => {
 
 // 页面初始化
 onMounted(() => {
+  // 页面初始化，不再预加载所有教师数据
+  // 教师数据将在用户选择学院时按需加载
+  
   // 尝试恢复草稿
   try {
     const draft = localStorage.getItem('achievement_draft')

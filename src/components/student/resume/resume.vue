@@ -92,13 +92,11 @@
                 color: '#fff'
               }"
             >
-              <h3>{{ basic_info.user_name || "张三" }}</h3>
+              <h3>{{ basic_info.user_name || "刘在行" }}</h3>
               <p>计算机科学与技术</p>
               <div class="contact-info">
                 <span>📞 {{ basic_info.phone || "13800138000" }}</span>
-                <span>✉ {{ basic_info.email || "zhangsan@example.com" }}</span>
-                <span>📍 {{ basic_info.address || "北京市海淀区某某大学" }}</span>
-                <span>🎓 {{ basic_info.student_id || "2021001001" }}</span>
+                <span>✉ {{ basic_info.email || "liuxing@example.com" }}</span>
               </div>
             </div>
             <div class="preview-section">

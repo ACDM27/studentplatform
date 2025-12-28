@@ -3,6 +3,10 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import naiveUI from './plugins/naive-ui' // 导入Naive UI插件
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+// 导入API调试工具
+import './utils/api-debug'
 
 // 创建Vue应用实例
 const app = createApp(App)
@@ -11,6 +15,7 @@ const app = createApp(App)
 app.use(router)
 app.use(store)
 app.use(naiveUI)
+app.use(ElementPlus)
 
 // 挂载应用
 app.mount('#app')

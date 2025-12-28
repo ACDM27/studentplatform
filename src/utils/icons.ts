@@ -44,7 +44,8 @@ import {
   IconInfoCircle,
   IconFile,
   IconAlertTriangle,
-  
+  IconCircleCheck as IconCheckCircle,
+  IconBulb as IconLightbulb,
   // 其他常用图标
   IconMail,
   IconPhone,
@@ -65,7 +66,15 @@ import {
   IconTrendingUp,
   IconTarget,
   IconMapPin,
-  IconClock
+  IconClock,
+  IconCode,
+  IconMusic,
+  IconCamera,
+  IconDeviceGamepad as IconGamepad,
+  IconRobot,
+  IconDots as IconMore,
+  IconList,
+  IconBrain
 } from '@tabler/icons-vue'
 
 // 重新导出所有图标
@@ -118,5 +127,22 @@ export {
   IconLink,
   IconExternalLink,
   IconClipboard,
-  IconFilter
+  IconFilter,
+  
+  // 业务相关图标
+  IconBuilding,
+  IconBriefcase,
+  IconTrendingUp,
+  IconTarget,
+  IconMapPin,
+  IconClock,
+  IconCode,
+  IconMusic,
+  IconCamera,
+  IconCheckCircle,
+  IconLightbulb,
+  IconRobot,
+  IconMore,
+  IconList,
+  IconBrain
 }

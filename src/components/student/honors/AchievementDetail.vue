@@ -219,7 +219,7 @@ const fetch_detail = async () => {
     const id = Array.isArray(achievement_id) ? achievement_id[0] : achievement_id
     console.log('请求成果详情，ID:', id)
     
-    // 🎯 策略1: 优先尝试从sessionStorage获取数据（如果从列表页跳转过来）
+    // 先尝试从sessionStorage获取数据（如果从列表页跳转过来）
     const cachedData = get_cached_achievement(id)
     if (cachedData) {
       console.log('✅ 从缓存获取成果详情:', cachedData)
@@ -228,10 +228,22 @@ const fetch_detail = async () => {
       return
     }
     
-    // 🎯 策略2: 尝试调用API获取详情
+    // 尝试调用API获取详情
     try {
-      console.log('🌐 尝试从API获取成果详情...')
-      const response = await http.get(`/achievements/${id}`)
+      console.log('尝试从API获取成果详情...')
+      // 首先尝试不包含已删除的成果
+      let response
+      try {
+        response = await http.get(`/achievements/${id}`)
+      } catch (firstError: any) {
+        // 如果404，尝试包含已删除的成果
+        if (firstError.response?.status === 404) {
+          console.log('尝试包含已删除成果的查询...')
+          response = await http.get(`/achievements/${id}`, { params: { includeDeleted: true } })
+        } else {
+          throw firstError
+        }
+      }
       console.log('成果详情API响应:', response)
       
       // 检查响应数据结构
@@ -260,15 +272,16 @@ const fetch_detail = async () => {
         return
       }
     } catch (apiError: any) {
-      console.warn('⚠️ API调用失败，尝试其他方式:', apiError.response?.status)
+      console.warn('API调用失败，尝试其他方式:', apiError.response?.status)
       
       // 如果是404错误，说明API端点不存在，尝试其他方式
       if (apiError.response?.status === 404) {
-        console.log('🔄 API端点不存在，尝试从成果列表API获取数据...')
+        console.log('API端点不存在，尝试从成果列表API获取数据...')
         
-        // 🎯 策略3: 从成果列表API获取所有数据，然后筛选
+        // 从成果列表API获取所有数据，然后筛选
         try {
-          const listResponse = await http.get('/achievements')
+          // 尝试获取包含已删除成果的列表
+          const listResponse = await http.get('/achievements', { params: { includeDeleted: true } })
           console.log('成果列表API响应:', listResponse)
           
           if (listResponse.data) {
@@ -304,12 +317,12 @@ const fetch_detail = async () => {
                 } : undefined
               }
               
-              console.log('✅ 从列表API获取成果详情成功:', achievement.value)
+              console.log('从列表API获取成果详情成功:', achievement.value)
               return
             }
           }
         } catch (listError) {
-          console.warn('⚠️ 成果列表API也失败了:', listError)
+          console.warn('成果列表API也失败了:', listError)
         }
       }
       
@@ -318,12 +331,12 @@ const fetch_detail = async () => {
     }
     
     // 如果所有API调用都没有返回有效数据
-    console.warn('⚠️ 所有API调用都未返回有效数据，使用默认数据')
+    console.warn('所有API调用都未返回有效数据，使用默认数据')
     message.warning('未找到成果详情，显示示例数据')
     use_default_data()
     
   } catch (error: any) {
-    console.error('❌ 获取成果详情失败:', error)
+    console.error('获取成果详情失败:', error)
     
     // 详细的错误信息
     if (error.response) {
@@ -354,7 +367,7 @@ const fetch_detail = async () => {
   }
 }
 
-// 🎯 新增：从缓存获取成果数据
+// 从缓存获取成果数据
 const get_cached_achievement = (id: string): AchievementDetail | null => {
   try {
     // 尝试从sessionStorage获取缓存的成果列表数据

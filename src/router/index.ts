@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import HomePage from '../components/HomePage.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -7,16 +7,16 @@ const routes: Array<RouteRecordRaw> = [
     name: 'home',
     component: HomePage
   },
-
   {
-    path: '/about',
-    name: 'about',
-    component: () => import('../views/AboutView.vue')
-  },
-  {
-    path: '/student/login',
+    path: '/login',
     name: 'studentLogin',
     component: () => import('../components/student/login/LoginPage.vue')
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../components/student/dashboard/DashboardPage.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/student',
@@ -72,6 +72,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'achievement-settings',
         name: 'achievementSettings',
         component: () => import('../components/student/honors/AchievementSettings.vue')
+      },
+      {
+        path: 'certificate-ocr',
+        name: 'certificateOcr',
+        component: () => import('../components/student/honors/CertificateOcr.vue')
       },
       {
         path: 'teachers',
@@ -142,31 +147,57 @@ const routes: Array<RouteRecordRaw> = [
         path: 'talent-market',
         name: 'talentMarket',
         component: () => import('../components/student/talent-market/talent-market.vue')
+      },
+      {
+        path: 'portrait',
+        name: 'studentPortrait',
+        component: () => import('../components/student/portrait/portrait-analysis.vue')
+      },
+      {
+        path: 'portrait/chat',
+        name: 'studentPortraitChat',
+        component: () => import('../components/student/portrait/portrait-chat.vue')
+      },
+      {
+        path: 'portrait/ai-chat',
+        name: 'studentPortraitAiChat',
+        component: () => import('../components/student/portrait/ai-chat.vue')
       }
     ]
   }
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes
 })
 
 // 全局前置守卫，检查是否需要登录
 router.beforeEach((to, from, next) => {
+  console.log('路由守卫检查:', {
+    to: to.path,
+    from: from.path,
+    requiresAuth: to.meta.requiresAuth
+  })
+  
   // 如果路由需要认证
   if (to.meta.requiresAuth) {
     // 检查是否有token
     const token = localStorage.getItem('token')
+    console.log('Token检查:', token ? '存在' : '不存在')
+    
     if (!token) {
       // 没有token，重定向到登录页
+      console.log('未登录，重定向到登录页')
       next({ name: 'studentLogin' })
     } else {
       // 有token，继续导航
+      console.log('已登录，允许访问')
       next()
     }
   } else {
     // 不需要认证的路由，直接通过
+    console.log('公开路由，直接通过')
     next()
   }
 })

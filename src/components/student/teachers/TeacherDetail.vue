@@ -17,7 +17,6 @@
             <h2>{{ teacher_data?.name || '教师详情' }}</h2>
             <span class="teacher_title">{{ title_map[teacher_data?.title || ''] || teacher_data?.title || '' }}</span>
           </div>
-          <p class="desc_text">{{ teacher_data?.college || '加载中...' }}</p>
         </div>
         <div class="action_btns">
           <n-button type="primary" @click="toggleFavorite" class="favorite_btn">
@@ -957,7 +956,7 @@ const fetchTeacherDetail = async (): Promise<void> => {
          console.log('教师列表API响应:', listResponse)
         
         if (listResponse.data) {
-          let teachers = []
+          let teachers: any[] = []
           
           // 处理不同的响应格式
           if (Array.isArray(listResponse.data)) {

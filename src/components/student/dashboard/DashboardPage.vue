@@ -12,13 +12,16 @@
         </div>
         <div class="user-details">
           <div class="user-name-id">
-            <h2>{{ userInfo.name }}</h2>
-            <n-tag size="small" type="info">{{ userInfo.student_id }}</n-tag>
+            <h2>
+              <span v-if="userLoading" class="loading-text">{{ userInfo.name }}</span>
+              <span v-else>{{ userInfo.name }}</span>
+            </h2>
+            <n-tag v-if="userInfo.student_id" size="small" type="info">{{ userInfo.student_id }}</n-tag>
           </div>
           <div class="user-academic-info">
-            <span>{{ userInfo.college }}</span>
-            <span>{{ userInfo.major }}</span>
-            <span>{{ userInfo.grade }}级</span>
+            <span v-if="userInfo.college">{{ userInfo.college }}</span>
+            <span v-if="userInfo.major">{{ userInfo.major }}</span>
+            <span v-if="userInfo.grade">{{ userInfo.grade }}级</span>
           </div>
         </div>
         <div class="semester-info">
@@ -77,7 +80,7 @@
                 </n-list-item>
               </n-list>
             </n-tab-pane>
-            <n-tab-pane name="project" tab="项目进度">
+            <n-tab-pane name="project" tab="课程进度">
               <n-list>
                 <n-list-item v-for="project in projectTasks" :key="project.id">
                   <n-thing :title="project.title">
@@ -140,8 +143,8 @@ import {
   CreditCard, 
   ClipboardCheck
 } from '@vicons/tabler'
-import { getAssignments, getNews } from '../../../apis/index'
-import type { IGetAssignmentsResp, IGetNewsResp } from '../../../types/api'
+import { getAssignments, getNews, getStudentsMe, getStudentsProfile } from '../../../apis/index'
+import type { IGetAssignmentsResp, IGetNewsResp, IGetStudentsMeResp, IGetStudentsProfileResp } from '../../../types/api'
 import { useCourseService } from '../../../services/courseService'
 
 const router = useRouter()
@@ -151,12 +154,15 @@ const { weekSchedule, loadCourses } = useCourseService()
 
 // 用户信息
 const userInfo = ref({
-  name: '张三',
-  student_id: '2021100123',
-  college: '计算机科学与技术学院',
-  major: '计算机科学与技术',
-  grade: '2021'
+  name: '加载中...',
+  student_id: '',
+  college: '',
+  major: '',
+  grade: '',
+  email: '',
+  username: ''
 })
+const userLoading = ref(false)
 
 // 当前学期
 const currentSemester = ref('2023-2024学年第二学期')
@@ -316,8 +322,95 @@ const fetchAssignments = async () => {
   }
 }
 
+// 获取用户信息
+const fetchUserInfo = async () => {
+  try {
+    userLoading.value = true
+    console.log('Dashboard: 开始获取用户信息...')
+    
+    // 检查是否有token
+    const token = localStorage.getItem('token')
+    console.log('Dashboard: 当前token:', token ? '存在' : '不存在')
+    
+    // 获取基本用户信息
+    console.log('Dashboard: 调用getStudentsMe API...')
+    const userResponse = await getStudentsMe()
+    console.log('Dashboard: getStudentsMe响应:', userResponse)
+    
+    if (userResponse) {
+      userInfo.value.username = userResponse.username || ''
+      userInfo.value.email = userResponse.email || ''
+      userInfo.value.name = userResponse.username || '用户'
+      
+      console.log('Dashboard: 设置基本用户信息:', {
+        username: userInfo.value.username,
+        email: userInfo.value.email,
+        name: userInfo.value.name
+      })
+    } else {
+      console.warn('Dashboard: getStudentsMe返回空响应')
+    }
+    
+    // 尝试获取详细档案信息
+    try {
+      console.log('Dashboard: 调用getStudentsProfile API...')
+      const profileResponse = await getStudentsProfile()
+      console.log('Dashboard: getStudentsProfile响应:', profileResponse)
+      
+      if (profileResponse && profileResponse.profile) {
+        // 如果档案中有姓名，优先使用档案中的姓名
+        if (profileResponse.profile.name) {
+          userInfo.value.name = profileResponse.profile.name
+          console.log('Dashboard: 使用档案姓名:', userInfo.value.name)
+        }
+        if (profileResponse.profile.studentId) {
+          userInfo.value.student_id = profileResponse.profile.studentId
+          console.log('Dashboard: 设置学号:', userInfo.value.student_id)
+        }
+        if (profileResponse.profile.college) {
+          userInfo.value.college = profileResponse.profile.college
+          console.log('Dashboard: 设置学院:', userInfo.value.college)
+        }
+        if (profileResponse.profile.major) {
+          userInfo.value.major = profileResponse.profile.major
+          console.log('Dashboard: 设置专业:', userInfo.value.major)
+        }
+        if (profileResponse.profile.grade) {
+          userInfo.value.grade = profileResponse.profile.grade
+          console.log('Dashboard: 设置年级:', userInfo.value.grade)
+        }
+      } else {
+        console.warn('Dashboard: getStudentsProfile返回空档案信息')
+      }
+    } catch (profileError) {
+      console.warn('Dashboard: 获取用户档案信息失败:', profileError)
+    }
+    
+    console.log('Dashboard: 用户信息获取完成，最终用户信息:', userInfo.value)
+    
+  } catch (error: any) {
+    console.error('Dashboard: 获取用户信息失败:', error)
+    console.error('Dashboard: 错误详情:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    })
+    
+    // 如果是401错误，说明需要登录
+    if (error.response?.status === 401) {
+      console.warn('Dashboard: 用户未登录，显示默认信息')
+      userInfo.value.name = '未登录用户'
+    } else {
+      userInfo.value.name = '用户'
+    }
+  } finally {
+    userLoading.value = false
+  }
+}
+
 // 在组件挂载时获取作业任务数据和新闻数据
 onMounted(() => {
+  fetchUserInfo()
   fetchAssignments()
   fetchNews()
   loadCourses() // 加载课程数据
@@ -634,6 +727,22 @@ const get_status_type = (status: string) => {
 
   .calendar-day {
     min-height: 50px;
+  }
+}
+
+.loading-text {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
   }
 }
 </style>

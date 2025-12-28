@@ -35,7 +35,16 @@ export interface IGetStudentsMeResp {
   id: number
   username: string
   email: string
-  // TODO: 补充更多学生信息字段
+  confirmed: boolean
+  blocked: boolean
+  role?: {
+    id: number
+    name: string
+    description?: string
+    type?: string
+  }
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface IGetStudentsByIdParams {
@@ -46,16 +55,27 @@ export interface IGetStudentsByIdResp {
   id: number
   username: string
   email: string
-  // TODO: 补充更多学生信息字段
+  confirmed: boolean
+  blocked: boolean
+  role?: {
+    id: number
+    name: string
+    description?: string
+    type?: string
+  }
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface IGetStudentsProfileResp {
-  // TODO: 补充学生档案信息字段
   profile: {
-    name: string
-    studentId: string
-    major: string
-    grade: string
+    name?: string
+    studentId?: string
+    major?: string
+    grade?: string
+    college?: string
+    phone?: string
+    avatar?: string
     // 其他档案信息
   }
 }
@@ -359,16 +379,18 @@ export interface IGetAchievementByIdParams {
 }
 
 export interface IGetAchievementByIdResp {
-  data: number
-  id: number
-  title: string
-  description: string
-  awardedAt: string
-  type_id: string
-  year: string
-  level: string
-  status: number
-  // 其他详情字段
+  data: {
+    id: number
+    title: string
+    description: string
+    awardedAt: string
+    type_id: string
+    year: string
+    level: string
+    status: number
+    // 其他详情字段
+  }
+  meta?: any
 }
 
 export interface IPostAchievementReq {
@@ -669,7 +691,8 @@ export interface IPutNewsResp {
 }
 
 export interface IDeleteNewsResp {
-  success: boolean
+  data?: any
+  meta?: any
 }
 
 // 人才市场相关接口
@@ -859,4 +882,34 @@ export interface IDeleteActivityParams {
 
 export interface IDeleteActivityResp {
   data: IActivityItem
+}
+
+// AI聊天相关接口
+export interface IPostStudentPortraitsChatReq {
+  question: string
+  student_id: string
+  context?: string
+}
+
+export interface IPostStudentPortraitsChatResp {
+  data: {
+    response: string
+    timestamp: string
+    student_id: string
+    error?: boolean
+  }
+}
+
+// 查询学生信息接口
+export interface IPostQueryStudentInfoReq {
+  question: string
+  student_id?: string
+}
+
+export interface IPostQueryStudentInfoResp {
+  data: {
+    response: string
+    timestamp?: string
+    error?: boolean
+  }
 }

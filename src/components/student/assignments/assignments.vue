@@ -145,6 +145,9 @@ interface Assignment {
   status: string
 }
 
+// 声明响应式的作业数据
+const assignments = ref<Assignment[]>([])
+
 // 根据时间判断作业状态
 const calculateAssignmentStatus = (publishDate: string, deadline: string): string => {
   const now = new Date()
@@ -164,31 +167,7 @@ const calculateAssignmentStatus = (publishDate: string, deadline: string): strin
   // 如果在发布时间和截止时间之间，显示"待提交"
   return '待提交'
 }
-  
-  // 作业数据
-const assignments = ref<Assignment[]>([
-  {
-    id: 1,
-    courseName: '数据结构与算法',
-    teacher: '张三',
-    requirements: '实现一个基本的二叉树数据结构，包括插入、删除和遍历操作。',
-    publishDate: '2024-01-01',
-    deadline: '2024-01-15',
-    maxSubmissions: '3次',
-    status: calculateAssignmentStatus('2024-01-01', '2024-01-15')
-  },
-  {
-    id: 2,
-    courseName: '软件工程',
-    teacher: '李四',
-    requirements: '编写详细的项目需求文档，包括功能需求和非功能需求。',
-    publishDate: '2024-01-05',
-    deadline: '2024-01-20',
-    maxSubmissions: '2次',
-    status: calculateAssignmentStatus('2024-01-05', '2024-01-20')
-  }
-])
-  
+    
   // 从API获取作业数据
 const fetchAssignments = async () => {
   try {

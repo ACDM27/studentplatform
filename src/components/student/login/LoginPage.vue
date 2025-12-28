@@ -53,10 +53,10 @@
           ref="formRef"
         >
           <template v-if="loginType === 'id'">
-            <n-form-item label="学号" path="studentId">
+            <n-form-item label="姓名" path="studentId">
               <n-input 
                 v-model:value="formData.studentId" 
-                placeholder="请输入学号"
+                placeholder="请输入姓名"
                 clearable
               >
                 <template #prefix>
@@ -66,11 +66,11 @@
                 </template>
               </n-input>
             </n-form-item>
-            <n-form-item label="密码" path="password">
+            <n-form-item label="学号" path="password">
               <n-input 
                 v-model:value="formData.password" 
                 type="password" 
-                placeholder="请输入密码"
+                placeholder="请输入学号"
                 clearable
                 show-password-on="click"
               >
@@ -248,8 +248,13 @@ const handleLogin = async () => {
         console.log('登录响应:', response)
         
         // 处理登录成功响应
-        if (response.data && response.data.jwt) {
-          const token = response.data.jwt
+        console.log('登录响应数据结构:', response)
+        
+        // 兼容不同的响应数据结构
+        const token = response.jwt || response.data?.jwt
+        
+        if (token) {
+          console.log('成功获取token，准备保存并跳转')
           localStorage.setItem('token', token)
           
           // 记住密码功能
@@ -265,10 +270,18 @@ const handleLogin = async () => {
           
           message.success('登录成功')
           
-          // 登录成功后跳转
+          // 登录成功后跳转到 dashboard
           setTimeout(() => {
-            router.push('/student/dashboard')
-          }, 1000)
+            console.log('开始跳转到 /student/dashboard')
+            router.push('/student/dashboard').then(() => {
+              console.log('路由跳转成功')
+            }).catch(err => {
+              console.error('路由跳转失败:', err)
+            })
+          }, 500)
+        } else {
+          console.error('登录响应中未找到token')
+          message.error('登录失败：未获取到有效的认证信息')
         }
       } else {
         // 手机号登录逻辑
@@ -277,20 +290,33 @@ const handleLogin = async () => {
       }
     } catch (error: any) {
       console.error('登录失败:', error)
+      console.error('错误详情:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      })
+      
       // 显示友好的错误提示
       if (error.response) {
         const status = error.response.status
         const data = error.response.data
         
         if (status === 400) {
-          message.error('用户名或密码错误')
+          message.error('用户名或密码错误，请检查后重试')
+        } else if (status === 401) {
+          message.error('认证失败，用户名或密码不正确')
         } else if (status === 429) {
           message.error('登录尝试次数过多，请稍后再试')
+        } else if (status >= 500) {
+          message.error('服务器错误，请稍后再试或联系管理员')
         } else {
-          message.error(data?.error?.message || '登录失败，请稍后再试')
+          message.error(data?.error?.message || data?.message || '登录失败，请稍后再试')
         }
+      } else if (error.message?.includes('Network Error')) {
+        message.error('网络连接失败，请检查：\n1. 后端服务是否启动\n2. API地址是否正确\n3. 网络连接是否正常')
       } else {
-        message.error('网络错误，请检查网络连接')
+        message.error('登录失败：' + (error.message || '未知错误'))
       }
     } finally {
       loading.value = false

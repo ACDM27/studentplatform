@@ -72,7 +72,7 @@ const router = useRouter()
 const hoverRegister = ref(false)
 
 const goToLogin = () => {
-  router.push('/student/login')
+  router.push('/login')
 }
 
 const goToRegister = () => {

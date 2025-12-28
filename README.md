@@ -1,363 +1,391 @@
-````markdown
-# 学生综合信息服务平台文档
+# 学生综合信息服务平台
 
-## 一、学生应用端（Student-Facing Application）
+## 项目概述
 
-核心关键词：学习、作业、简历、就业、反馈、荣誉、任务
+学生综合信息服务平台是一个基于Vue3 + TypeScript + Naive UI构建的现代化学生服务系统，旨在为学生提供一站式的学习、生活和就业服务。平台集成了课程管理、作业提交、教师咨询、荣誉展示、人才市场等多个功能模块，通过智能化的数据分析和个性化推荐，助力学生的全面发展。
 
-1. **登录/注册页面（Login/Register）**
-   - 功能：学号/手机号注册登录、验证码认证、找回密码。
-   - 技术栈：Vue3 + Naive UI + Pinia。
+## 核心功能模块
 
-2. **首页仪表盘（Dashboard/Home）**
-   - 功能：展示学生头像、学业状态、最新任务/作业提醒、重要消息公告等。
-   - 技术栈：Vue3 + Naive UI 卡片布局 + Pinia。
+### 1. 用户认证与个人信息管理
 
-3. **教师信息查询页（Teacher Info）**
-   - 功能：按学院/研究方向查询老师，展示联系信息和科研方向。
-   - 技术栈：Vue3 + Naive UI 表格 + Pinia。
+#### 1.1 登录注册系统
+- **功能描述**：支持学号/邮箱登录，JWT令牌认证
+- **主要特性**：
+  - 安全的身份验证机制
+  - 自动令牌刷新
+  - 登录状态持久化
+- **技术实现**：基于Strapi用户权限系统，使用`/users/me`端点获取用户信息
 
-4. **反馈与申诉（Feedback & Appeal）**
-   - 功能：提交匿名或实名反馈、问题申诉，显示处理进度。
-   - 技术栈：Vue3 + Naive UI 表单与进度条 + Pinia。
+#### 1.2 个人档案管理
+- **功能描述**：学生基本信息展示与编辑
+- **包含信息**：
+  - 基本信息：姓名、学号、专业、年级、学院
+  - 联系方式：手机号、邮箱
+  - 个人头像上传与管理
 
-5. **课程与毕业查询（Curriculum & Graduation）**
-   - 功能：展示培养方案、已修/待修学分、课程分类等。
-   - 技术栈：Vue3 + Naive UI 表格与分页 + Pinia。
+### 2. 学习管理系统
 
-6. **作业管理（Assignment Overview）**
-   - 功能：按课程展示所有作业，支持提交状态查看、下载入口。
-   - 技术栈：Vue3 + Naive UI 标签与分页 + Pinia。
+#### 2.1 课程管理
+- **功能描述**：全面的课程信息管理和查询系统
+- **主要功能**：
+  - 课程列表展示（支持必修课/选修课分类）
+  - 课程详情查看（课程代码、学分、教师、时间、地点）
+  - 课程表视图（周视图和列表视图切换）
+  - 课程搜索和筛选
+- **数据结构**：包含课程代码、名称、学分、教师信息、上课时间、教室、学期等
 
-7. **简历生成（Resume Generator）**
-   - 功能：上传奖项、经历自动填入模板生成PDF。
-   - 技术栈：Vue3 + Naive UI 表单 + Pinia。
+#### 2.2 作业管理系统
+- **功能描述**：作业发布、提交和管理的完整流程
+- **学生端功能**：
+  - 作业列表查看（按课程分类）
+  - 作业详情展示（要求、截止时间、提交状态）
+  - 在线作业提交（支持多文件上传）
+  - 提交历史记录查看
+- **支持格式**：PDF、Word、ZIP等文档格式，单文件最大10MB
 
-8. **就业推荐（Job Recommendation）**
-   - 功能：AI推荐岗位、岗位描述、收藏、外链申请。
-   - 技术栈：Vue3 + Naive UI 列表与评分 + Pinia。
+#### 2.3 成绩与学习分析
+- **功能描述**：学习数据的可视化分析和趋势展示
+- **分析维度**：
+  - 各学期成绩趋势分析
+  - 课程完成情况统计
+  - 学习时间分布
+  - 个人学习画像生成
 
-9. **人才市场（Talent Market）**
-   - 功能：展示企业招聘信息、职位详情、企业联系、简历投递。
-   - 技术栈：Vue3 + Naive UI 卡片与表格 + Pinia。
+### 3. 教师服务系统
 
-10. **咨询预约（Consulting Appointment）**
-    - 功能：查看咨询老师时间表，预约时间段。
-    - 技术栈：Vue3 + Naive UI 日历 + Pinia。
+#### 3.1 教师信息查询
+- **功能描述**：全校教师信息的查询和展示系统
+- **查询维度**：
+  - 按学院/系部筛选
+  - 按研究方向搜索
+  - 按职称等级分类
+- **教师信息**：姓名、职称、研究方向、办公地点、联系方式、在招学生情况
 
-11. **荣誉展示（Honors & Rewards）**
-    - 功能：上传证书，展示获奖分类，奖学金统计。
-    - 技术栈：Vue3 + Naive UI 上传与图表 + Pinia。
+#### 3.2 咨询预约系统
+- **功能描述**：学生与教师/咨询师的在线预约和咨询服务
+- **咨询类型**：
+  - 学业咨询（课程选择、学习方法）
+  - 职业规划（就业指导、发展建议）
+- **预约功能**：
+  - 查看教师可用时间
+  - 在线预约时间段
+  - 咨询记录管理
 
-12. **团党任务（Party & League Tasks）**
-    - 功能：查看任务、上报进度、历史记录。
-    - 技术栈：Vue3 + Naive UI 进度条与上传 + Pinia。
+### 4. 荣誉成就系统
 
-13. **问卷投票（Surveys & Polls）**
-    - 功能：教师发起问卷，学生填写。
-    - 技术栈：Vue3 + Naive UI 动态表单 + Pinia。
+#### 4.1 荣誉展示
+- **功能描述**：学生获奖情况的记录和展示平台
+- **荣誉类型**：
+  - 学术竞赛奖项
+  - 奖学金获得情况
+  - 社会实践荣誉
+  - 技能认证证书
+- **管理功能**：
+  - 荣誉信息录入
+  - 证书图片上传
+  - 荣誉分类管理
+  - 统计分析展示
 
----
+#### 4.2 证书OCR识别
+- **功能描述**：智能证书信息提取和录入
+- **技术特性**：
+  - 自动识别证书内容
+  - 智能信息提取
+  - 一键录入系统
 
-## 二、后台管理端（Admin Panel）
+### 5. 就业服务系统
 
-核心关键词：用户、AI配置、数据管理、任务审核、知识库
+#### 5.1 人才市场
+- **功能描述**：企业招聘信息发布和求职服务平台
+- **企业信息**：
+  - 公司基本信息（名称、规模、行业、地址）
+  - 企业详情（发展历程、企业文化、联系方式）
+  - 招聘职位列表
+- **职位信息**：
+  - 职位详情（薪资、要求、福利）
+  - 技能要求标签
+  - 在线投递简历
 
-1. **后台登录（Admin Login）**
-   - 功能：管理员工号登录。
-   - 技术栈：Vue3 + Naive UI + Pinia。
+#### 5.2 简历管理
+- **功能描述**：个人简历的创建、编辑和管理
+- **简历模块**：
+  - 教育经历
+  - 工作经验
+  - 技能特长
+  - 项目经历
+  - 荣誉奖项（自动关联荣誉系统）
+- **导出功能**：支持PDF格式导出
 
-2. **后台仪表盘（Admin Dashboard）**
-   - 功能：注册人数、活跃度、完成率、AI调用次数等图表。
-   - 技术栈：Vue3 + Naive UI 卡片与图表 + Pinia。
+#### 5.3 就业统计
+- **功能描述**：就业市场数据分析和展示
+- **统计指标**：
+  - 企业总数和职位总数
+  - 新增职位趋势
+  - 匹配职位推荐
+  - 行业分布分析
 
-3. **用户管理（User Management）**
-   - 功能：查找用户、权限分配、导入导出。
-   - 技术栈：Vue3 + Naive UI 表格与树形 + Pinia。
+### 6. 反馈申诉系统
 
-4. **申诉审核（Appeal Review）**
-   - 功能：审批反馈/申诉，标记、转交。
-   - 技术栈：Vue3 + Naive UI 步骤条与状态 + Pinia。
+#### 6.1 意见反馈
+- **功能描述**：学生意见建议的收集和处理平台
+- **反馈类型**：
+  - 建议类反馈
+  - 问题申诉
+  - 系统问题报告
+  - 其他意见
+- **处理流程**：
+  - 反馈提交
+  - 状态跟踪（待处理/处理中/已处理）
+  - 处理结果通知
 
-5. **AI配置（AI Settings）**
-   - 功能：配置Prompt、模块启停、监控调用。
-   - 技术栈：Vue3 + Naive UI 代码编辑器与折叠面板 + Pinia。
+### 7. 校园活动系统
 
-6. **数据整合（Data Integration）**
-   - 功能：数据源状态、ETL规则、预览与检测。
-   - 技术栈：Vue3 + Naive UI 步骤条与表格 + Pinia。
+#### 7.1 活动信息
+- **功能描述**：校园活动的发布和参与管理
+- **活动类型**：
+  - 学院活动
+  - 校园活动
+  - 社团活动
+  - 团委活动
+- **活动管理**：
+  - 活动详情展示
+  - 报名时间管理
+  - 参与人数统计
+  - 学分记录
 
-7. **知识库管理（Knowledge Base）**
-   - 功能：PDF上传、自动提取、图谱编辑。
-   - 技术栈：Vue3 + Naive UI 文件上传与编辑器 + Pinia。
+### 8. 新闻公告系统
 
----
+#### 8.1 校园资讯
+- **功能描述**：校园新闻和重要通知的发布平台
+- **内容分类**：
+  - 考试通知
+  - 活动通知
+  - 竞赛通知
+- **展示特性**：
+  - 分类浏览
+  - 时间排序
+  - 重要通知置顶
 
-## 三、项目目录结构
+### 9. 智能分析系统
 
-```text
-stu_plt/
-├── node_modules/
-├── public/
-│   └── index.html
+#### 9.1 学生画像分析
+- **功能描述**：基于学习数据的个性化分析
+- **分析维度**：
+  - 学习行为分析
+  - 成绩趋势预测
+  - 个性化推荐
+- **AI功能**：
+  - 智能问答系统
+  - 学习建议生成
+  - 职业规划指导
+
+#### 9.2 数据可视化
+- **功能描述**：多维度数据的图表化展示
+- **图表类型**：
+  - 成绩趋势线图
+  - 课程完成饼图
+  - 学习时间分布图
+  - 荣誉统计柱状图
+
+## 技术架构
+
+### 前端技术栈
+- **框架**：Vue 3 + TypeScript
+- **UI组件库**：Naive UI
+- **状态管理**：Pinia
+- **路由管理**：Vue Router
+- **HTTP客户端**：Axios
+- **图表库**：ECharts (vue-echarts)
+- **图标库**：@tabler/icons-vue
+- **构建工具**：Vite
+
+### 后端接口
+- **CMS系统**：Strapi v5
+- **认证方式**：JWT Token
+- **API风格**：RESTful API
+- **数据格式**：JSON
+
+### 项目结构
+```
+stu_plat/
+├── public/                     # 静态资源
+│   ├── favicon.ico
+│   ├── avatar.jpg
+│   └── teacher-avatars/
 ├── src/
-│   ├── assets/                 # 静态资源
-│   ├── components/             # 组件存放
-│   │   ├── student/            # 学生端组件
+│   ├── apis/                   # API接口封装
+│   │   └── index.ts
+│   ├── components/             # Vue组件
+│   │   ├── HomePage.vue
+│   │   └── student/            # 学生端组件
+│   │       ├── dashboard/      # 仪表盘
+│   │       ├── courses/        # 课程管理
+│   │       ├── assignments/    # 作业管理
+│   │       ├── teachers/       # 教师信息
+│   │       ├── honors/         # 荣誉管理
+│   │       ├── resume/         # 简历管理
+│   │       ├── talent-market/  # 人才市场
+│   │       ├── feedback/       # 反馈系统
+│   │       ├── login/          # 登录页面
+│   │       ├── stastic/        # 数据统计
+│   │       ├── portrait/       # 学生画像
+│   │       └── vote-survey/    # 投票调查
 │   ├── layout/                 # 布局组件
-│   ├── plugins/                # 插件注册（如naive-ui）
-│   ├── router/                 # Vue Router 配置
-│   ├── server/api/             # 后端 API 接口定义
+│   │   ├── StudentLayout.vue
+│   │   └── student-sidebar.vue
+│   ├── router/                 # 路由配置
+│   ├── server/api/             # API配置
 │   │   ├── api.ts
 │   │   └── http.ts
-│   ├── store/                  # Pinia 状态管理
-│   │   └── index.ts
+│   ├── store/                  # 状态管理
+│   ├── types/                  # TypeScript类型定义
+│   │   └── api.d.ts
 │   ├── utils/                  # 工具函数
-│   ├── views/                  # 页面视图
-│   ├── App.vue
-│   ├── main.ts
-│   └── env.d.ts
-├── .env                         # 环境变量
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-````
+│   ├── services/               # 业务服务
+│   ├── plugins/                # 插件配置
+│   └── views/                  # 页面视图
+├── .env                        # 环境变量
+├── package.json               # 项目依赖
+├── tsconfig.json              # TypeScript配置
+├── vite.config.ts             # Vite配置
+└── Dockerfile                 # Docker配置
+```
+
+## 核心API接口
+
+### 认证相关
+- `POST /api/auth/local` - 用户登录
+- `GET /api/users/me` - 获取当前用户信息
+- `POST /api/auth/logout` - 用户登出
+
+### 学生信息
+- `GET /api/users/me` - 获取学生基本信息
+- `GET /api/students/profile` - 获取学生档案信息
+- `GET /api/students/statistics` - 获取学生统计数据
+
+### 课程管理
+- `GET /api/courses` - 获取课程列表
+- `GET /api/courses/{id}` - 获取课程详情
+
+### 作业管理
+- `GET /api/assignments` - 获取作业列表
+- `GET /api/assignments/{id}` - 获取作业详情
+- `POST /api/assignments/{id}/submit` - 提交作业
+
+### 教师信息
+- `GET /api/teachers` - 获取教师列表
+- `GET /api/teachers/{id}` - 获取教师详情
+
+### 咨询服务
+- `GET /api/consult-teachers` - 获取咨询师列表
+- `POST /api/consultations/book` - 预约咨询
+
+### 荣誉管理
+- `GET /api/achievements` - 获取荣誉列表
+- `POST /api/achievements` - 添加荣誉
+- `PUT /api/achievements/{id}` - 更新荣誉
+- `DELETE /api/achievements/{id}` - 删除荣誉
+
+### 反馈系统
+- `GET /api/feedbacks` - 获取反馈列表
+- `POST /api/feedbacks` - 提交反馈
+- `PUT /api/feedbacks/{id}` - 更新反馈状态
+
+### 人才市场
+- `GET /api/companies` - 获取企业列表
+- `GET /api/companies/{id}` - 获取企业详情
+- `GET /api/positions` - 获取职位列表
+- `POST /api/companies/{id}/contact` - 联系企业
+- `POST /api/positions/{id}/apply` - 申请职位
+
+### 简历管理
+- `GET /api/resume` - 获取简历信息
+- `PUT /api/resume` - 更新简历
+
+### 活动管理
+- `GET /api/activities` - 获取活动列表
+- `GET /api/activities/{id}` - 获取活动详情
+
+### 新闻公告
+- `GET /api/news` - 获取新闻列表
+- `GET /api/news/{id}` - 获取新闻详情
+
+## 部署说明
+
+### 环境要求
+- Node.js 20+
+- pnpm 包管理器
+- 现代浏览器支持
+
+### 安装步骤
+```bash
+# 克隆项目
+git clone <repository-url>
+cd stu_plat
+
+# 安装依赖
+pnpm install
+
+# 配置环境变量
+cp .env.example .env
+# 编辑.env文件，配置API地址等
+
+# 开发环境启动
+pnpm run dev
+
+# 生产环境构建
+pnpm run build
+
+# 生产环境启动
+pnpm run serve
+```
+
+### Docker部署
+```bash
+# 构建镜像
+docker build -t stu-platform .
+
+# 运行容器
+docker run -p 8080:8080 stu-platform
+```
+
+## 用户角色与权限
+
+### 学生用户
+- 查看个人信息和学习数据
+- 管理课程和作业
+- 使用咨询和反馈服务
+- 管理个人荣誉和简历
+- 浏览人才市场和活动信息
+
+### 教师用户
+- 发布和管理课程
+- 布置和批改作业
+- 提供咨询服务
+- 查看学生学习情况
+
+### 管理员
+- 用户管理和权限分配
+- 系统配置和维护
+- 数据统计和分析
+- 内容审核和管理
+
+## 特色功能
+
+1. **智能化服务**：基于AI的学习分析和个性化推荐
+2. **一站式平台**：集成学习、生活、就业等多个服务
+3. **数据可视化**：丰富的图表展示和数据分析
+4. **移动端适配**：响应式设计，支持多设备访问
+5. **实时更新**：基于现代前端技术的实时数据更新
+6. **安全可靠**：完善的权限控制和数据安全保护
+
+## 联系方式
+
+如有问题或建议，请通过以下方式联系：
+- 项目仓库：[GitHub Repository]
+- 技术支持：[Support Email]
+- 用户手册：[Documentation Link]
 
 ---
 
-## 四、API 接口规范
-
-````markdown
-### 1. 登录认证
-
-- **URL:** `/api/auth/login`
-- **方法:** `POST`
-- **请求头:** `Content-Type: application/json`
-- **请求体:**
-  ```json
-  {
-    "identifier": "string", // 学号或手机号
-    "password": "string"
-  }
-````
-
-* **响应:**
-
-  ```json
-  {
-    "token": "jwt-token",
-    "user": { "id": number, "role": "student|admin|counselor" }
-  }
-  ```
-
-### 2. 获取用户信息
-
-* **URL:** `/api/auth/me`
-* **方法:** `GET`
-* **请求头:** `Authorization: Bearer <token>`
-* **响应:**
-
-  ```json
-  {
-    "id": 1,
-    "name": "张三",
-    "role": "student",
-    "avatar": "url"
-  }
-  ```
-
-### 3. 作业列表
-
-* **URL:** `/api/assignments`
-* **方法:** `GET`
-* **请求头:** `Authorization: Bearer <token>`
-* **查询参数:** `courseId`（可选）
-* **响应:**
-
-  ```json
-  [
-    { "id":1, "title":"作业1", "dueDate":"2025-07-20" },
-    ...
-  ]
-  ```
-
-### 4. 提交作业
-
-* **URL:** `/api/assignments/{id}/submit`
-* **方法:** `POST`
-* **请求头:** `Authorization: Bearer <token>`
-* **请求体:** `FormData`，包含 `file` 字段上传文件
-* **响应:**
-
-  ```json
-  { "status": "success" }
-  ```
-
-### 5. 人才市场 - 获取企业列表
-
-* **URL:** `/api/companies`
-* **方法:** `GET`
-* **请求头:** `Authorization: Bearer <token>`
-* **查询参数:** `search`（可选）、`industry`（可选）、`location`（可选）、`size`（可选）
-* **响应:**
-
-  ```json
-  {
-    "companies": [
-      {
-        "id": 1,
-        "name": "腾讯科技",
-        "logo": "url",
-        "industry": "互联网",
-        "location": "深圳",
-        "size": "10000+",
-        "description": "公司描述",
-        "positions": [
-          {
-            "id": 1,
-            "title": "前端开发工程师",
-            "salary": "15-25K",
-            "type": "全职",
-            "requirements": "要求描述"
-          }
-        ]
-      }
-    ],
-    "total": 50
-  }
-  ```
-
-### 6. 人才市场 - 获取企业详情
-
-* **URL:** `/api/companies/{id}`
-* **方法:** `GET`
-* **请求头:** `Authorization: Bearer <token>`
-* **响应:**
-
-  ```json
-  {
-    "id": 1,
-    "name": "腾讯科技",
-    "logo": "url",
-    "industry": "互联网",
-    "location": "深圳",
-    "size": "10000+",
-    "description": "详细公司描述",
-    "website": "https://www.tencent.com",
-    "contact": {
-      "email": "hr@tencent.com",
-      "phone": "400-123-4567"
-    },
-    "positions": [...]
-  }
-  ```
-
-### 7. 人才市场 - 联系企业
-
-* **URL:** `/api/companies/{id}/contact`
-* **方法:** `POST`
-* **请求头:** `Authorization: Bearer <token>`
-* **请求体:**
-
-  ```json
-  {
-    "message": "联系信息",
-    "resume_id": 1
-  }
-  ```
-
-* **响应:**
-
-  ```json
-  { "status": "success", "message": "联系请求已发送" }
-  ```
-
-### 8. 人才市场 - 获取市场统计
-
-* **URL:** `/api/market/stats`
-* **方法:** `GET`
-* **请求头:** `Authorization: Bearer <token>`
-* **响应:**
-
-  ```json
-  {
-    "total_companies": 150,
-    "total_positions": 320,
-    "active_recruitments": 89,
-    "new_this_week": 25
-  }
-  ```
-
-> 更多接口请参照 `src/server/api/api.ts`。
-
-````
-
-## 五、组件库使用规范
-
-```markdown
-- **UI 框架:** Naive UI
-
-- **注册方式:** 在 `src/plugins/naive.ts` 中统一导入并注册：
-  ```ts
-  import { create, NConfigProvider, NButton, /* ... */ } from 'naive-ui'
-  import type { App } from 'vue'
-
-  export default function setupNaive(app: App) {
-    const naive = create({
-      components: [NConfigProvider, NButton /* ... */]
-    })
-    app.use(naive)
-  }
-````
-
-* **图标库:** unplugin-icons + `Icon` 前缀，页面中直接使用：
-
-  ```vue
-  <template>
-    <IconSchool />
-  </template>
-  ```
-
-* **按需加载:** 配置 `unplugin-vue-components` 和 `unplugin-icons`，无需手动全局注册。
-
-````
-
-## 六、Vue 项目搭建规范
-
-1. **初始化项目**
-   ```bash
-   npm init vue@latest stu_plt
-   # 选择 Vue3 + TypeScript + Vue Router + Pinia + ESLint + Prettier + TailwindCSS
-   cd stu_plt
-   npm install
-````
-
-2. **目录调整**
-
-   * 按照上文目录结构调整文件夹。
-
-3. **环境变量**
-
-   * 在根目录创建 `.env`：
-
-     ```dotenv
-     VITE_API_BASE_URL=http://localhost:1337/api
-     ```
-   * `src/utils/http.ts` 使用：
-
-     ```ts
-     import axios from 'axios'
-     export const http = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL })
-     ```
-
-4. **代码规范**
-
-   * ESLint + Prettier 已配置，`npm run lint` 检查。
-
-5. **启动项目**
-
-
-   ```bash
-   npm run dev
-   ```
+*本文档最后更新时间：2025年1月*

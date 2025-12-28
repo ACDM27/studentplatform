@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录流程测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #1890ff;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e6f7ff;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #fff1f0;
+            color: #cf1322;
+        }
+        .success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 登录流程测试工具</h1>
+        
+        <div class="test-section">
+            <h3>1. 测试后端 API 连接</h3>
+            <label>API 地址:</label>
+            <input type="text" id="apiUrl" value="http://localhost:1337/api/auth/local">
+            <label>用户名/学号:</label>
+            <input type="text" id="username" placeholder="输入用户名或学号">
+            <label>密码:</label>
+            <input type="password" id="password" placeholder="输入密码">
+            <button onclick="testLogin()">测试登录 API</button>
+            <div id="loginResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 检查 localStorage</h3>
+            <button onclick="checkLocalStorage()">检查 Token</button>
+            <button onclick="clearLocalStorage()">清除 Token</button>
+            <button onclick="setTestToken()">设置测试 Token</button>
+            <div id="storageResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 测试路由跳转</h3>
+            <button onclick="testRouteNavigation()">测试跳转到 Dashboard</button>
+            <button onclick="testDirectAccess()">直接访问 Dashboard</button>
+            <div id="routeResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 诊断信息</h3>
+            <button onclick="showDiagnostics()">显示完整诊断</button>
+            <div id="diagnosticsResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 测试登录 API
+        async function testLogin() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            if (!username || !password) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '请输入用户名和密码';
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在测试登录...';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        identifier: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.jwt) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ 登录成功！\n\nToken: ${data.jwt.substring(0, 50)}...\n\n用户信息:\n${JSON.stringify(data.user, null, 2)}`;
+                    
+                    // 自动保存 token
+                    localStorage.setItem('token', data.jwt);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 登录失败\n\n状态码: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 请求失败\n\n错误: ${error.message}\n\n请确认:\n1. 后端服务是否运行在 http://localhost:1337\n2. 网络连接是否正常\n3. CORS 配置是否正确`;
+            }
+        }
+
+        // 检查 localStorage
+        function checkLocalStorage() {
+            const resultDiv = document.getElementById('storageResult');
+            resultDiv.style.display = 'block';
+            
+            const token = localStorage.getItem('token');
+            
+            if (token) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Token 存在\n\n${token.substring(0, 100)}...\n\n长度: ${token.length} 字符`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ 未找到 Token\n\n请先登录或设置测试 Token';
+            }
+        }
+
+        // 清除 localStorage
+        function clearLocalStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('savedStudentId');
+            localStorage.removeItem('savedPassword');
+            localStorage.removeItem('rememberPassword');
+            
+            const resultDiv = document.getElementById('storageResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result success';
+            resultDiv.textContent = '✅ 已清除所有登录信息';
+        }
+
+        // 设置测试 Token
+        function setTestToken() {
+            const testToken = 'test-token-' + Date.now();
+            localStorage.setItem('token', testToken);
+            
+            const resultDiv = document.getElementById('storageResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result success';
+            resultDiv.textContent = `✅ 已设置测试 Token\n\n${testToken}`;
+        }
+
+        // 测试路由跳转
+        function testRouteNavigation() {
+            const resultDiv = document.getElementById('routeResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ 未找到 Token，无法测试路由跳转\n\n请先登录或设置测试 Token';
+                return;
+            }
+
+            resultDiv.textContent = '正在跳转到 Dashboard...';
+            
+            setTimeout(() => {
+                window.location.href = '/#/student/dashboard';
+            }, 1000);
+        }
+
+        // 直接访问 Dashboard
+        function testDirectAccess() {
+            window.location.href = '/#/student/dashboard';
+        }
+
+        // 显示诊断信息
+        function showDiagnostics() {
+            const resultDiv = document.getElementById('diagnosticsResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            const diagnostics = {
+                '当前 URL': window.location.href,
+                '当前 Hash': window.location.hash,
+                'Token 状态': localStorage.getItem('token') ? '存在' : '不存在',
+                'Token 长度': localStorage.getItem('token')?.length || 0,
+                '浏览器': navigator.userAgent,
+                'localStorage 内容': Object.keys(localStorage).map(key => `${key}: ${localStorage.getItem(key)?.substring(0, 50)}...`).join('\n')
+            };
+            
+            resultDiv.textContent = Object.entries(diagnostics)
+                .map(([key, value]) => `${key}:\n${value}`)
+                .join('\n\n');
+        }
+    </script>
+</body>
+</html>
